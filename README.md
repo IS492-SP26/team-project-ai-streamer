@@ -1,6 +1,6 @@
 # team-project-ai-streamer
 team-project-ai-steamer created by GitHub Classroom
-- Team Member - Danni Wu, Fitz Song, Caroline
+- Team Member - Danni Wu, Fitz Song,
 
 Ussful link:
 https://github.com/VedalAI/neuro-sdk 
