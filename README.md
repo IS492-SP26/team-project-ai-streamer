@@ -1,5 +1,5 @@
 # team-project-ai-streamer
-team-project-ai-steamer created by GitHub Classroom
+team-project-ai-streamer created by GitHub Classroom
 - Team Member - Danni Wu, Fitz Song, Caroline Wen
 - AI VTuber Orchestrator, a generative AI system designed to make AI characters safer, more consistent, and more usable for real applications. Instead of creating another VTuber bot,  focus is more on building a product-level middleware that sits between an LLM and a live system.  Reference and inspied by Neuro sama agents.
 The system may has two parts:
