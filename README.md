@@ -7,25 +7,3 @@ The system may has two parts:
 - Guardrail & saftey layer: A real-time moderation layer that evaluates the AI’s generated text for toxicity, NSFW content, political sensitivity, or persona drift, and automatically rewrites or blocks unsafe output.
 Goal: To create a plug-in SDK + small web console that any AI VTuber or LLM agent system (Unity/Python pipelines) can connect to via a simple API .
 
-- Ussful link:
-
-https://github.com/VedalAI/neuro-sdk 
-
-https://github.com/Govorunb/gary/tree/main 
-
-https://github.com/AkagawaTsurunaki/ZerolanLiveRobot 
-
-https://github.com/AkagawaTsurunaki/zerolan-core 
-
-https://www.evilkaraoke.com/song/db559e8e-d26e-4333-b98b-e50ba465f5cd 
-
-https://github.com/kimjammer/Neuro 
-
-https://vedal.ai/ 
-
-- Paper:
-https://arxiv.org/abs/2509.20817
-https://arxiv.org/abs/2509.10427
-
-- Pipeline:
-
