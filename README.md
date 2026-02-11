@@ -7,3 +7,12 @@ The system may has two parts:
 - Guardrail & saftey layer: A real-time moderation layer that evaluates the AI’s generated text for toxicity, NSFW content, political sensitivity, or persona drift, and automatically rewrites or blocks unsafe output.
 Goal: To create a plug-in SDK + small web console that any AI VTuber or LLM agent system (Unity/Python pipelines) can connect to via a simple API .
 
+## Problem statement and why it matters
+
+## Target users and core tasks
+
+## Competitive landscape: existing systems/tools and their shortcomings
+
+## Initial concept and value proposition
+
+## Milestones & roles (who owns what)
