@@ -1,3 +1,5 @@
+https://canvas.illinois.edu/courses/64886/pages/team-project-instructions-4-check-points
+https://canvas.illinois.edu/courses/64886/discussion_topics/1075469
 # team-project-ai-streamer
 team-project-ai-streamer created by GitHub Classroom
 - Team Member - Danni Wu, Fitz Song, Caroline Wen
