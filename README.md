@@ -16,3 +16,5 @@ Goal: To create a plug-in SDK + small web console that any AI VTuber or LLM agen
 ## Initial concept and value proposition
 
 ## Milestones & roles (who owns what)
+
+## Literature reference (BibTeX/APA citations)
