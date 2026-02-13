@@ -1,7 +1,7 @@
 # C-A-B: An Integrated Governance Pipeline for AI Livestream Agents
 
 ## 1. Problem & Importance
-The deployment of Large Language Models (LLMs) in public-facing autonomous roles—such as AI VTubers and interactive livestream agents—introduces risks that traditional safety benchmarks do not fully capture. Most current LLM safety evaluations focus on static, single-turn prompt–response interactions. In contrast, livestream environments involve continuous, multi-turn conversations under public visibility and adversarial pressure.
+The deployment of Large Language Models (LLMs) in public-facing autonomous roles, such as AI VTubers and interactive livestream agents—introduces risks that traditional safety benchmarks do not fully capture. Most current LLM safety evaluations focus on static, single-turn prompt–response interactions. In contrast, livestream environments involve continuous, multi-turn conversations under public visibility and adversarial pressure.
 
 Recent research demonstrates that multi-turn adversarial strategies are significantly more effective than single-turn attacks, as harmful intent can be introduced gradually through conversational escalation (Belaire et al., 2025; Anonymous, 2024). At the same time, increasing agent autonomy expands the potential risk surface, especially when creators rely on AI systems to manage high-volume, real-time interactions.
 
@@ -119,3 +119,4 @@ Chennabasappa, S., et al. (2025). *LlamaFirewall: An open source guardrail syste
 Xu, W., & Parhi, K. K. (2025). *A survey of attacks on large language models.*
 
 Anonymous. (2024). *Uncovering model vulnerabilities with multi-turn red teaming.*
+
