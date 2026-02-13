@@ -2,8 +2,8 @@ https://canvas.illinois.edu/courses/64886/pages/team-project-instructions-4-chec
 https://canvas.illinois.edu/courses/64886/discussion_topics/1075469
 # team-project-ai-streamer
 team-project-ai-streamer created by GitHub Classroom
-- Team Member - Danni Wu, Fitz Song, Caroline Wen
-- 
+- Team Member: Danni Wu, Fitz Song, Caroline Wen
+
 # Autonomy-Calibrated Governance for AI Livestream Agents
 This project develops a research prototype that explores autonomy calibration and governance mechanisms for AI-driven livestream agents operating in open public environments. Rather than building another chatbot or VTuber engine, we focus on designing a governance layer that sits between a Large Language Model (LLM) and a livestream interface.
 
@@ -28,7 +28,7 @@ As a result, creators face a practical tradeoff. Restricting autonomy preserves 
 ### Primary Users
 - AI VTuber creators, Small development teams building autonomous digital personas, AI entertainment startups
 ### Secondary Stakeholders
-- Streaming platforms((Twitch, YouTube)), Moderation team, Audiences interacting with AI agents  
+- Streaming platforms(Twitch, YouTube), Moderation team, Audiences interacting with AI agents  
 
 ### Core Tasks
 
@@ -40,14 +40,6 @@ Adjust the level of mediation applied to model outputs in real time. In this pro
 
 3. Real-Time Monitoring and Intervention  
 Provide visibility into risk scores and system decisions, and allow human operators to intervene when necessary.
-
-### Definition of Success
-
-- The agent maintains a consistent persona  
-- High-risk prompts are detected and mediated  
-- Human operators retain meaningful oversight  
-- Audience engagement is preserved without policy violations  
-
 
 ## 📊 Competitive Landscape
 
