@@ -1,0 +1,19 @@
+## AI Disclosure (Academic Integrity & Responsible AI)
+
+This project used generative AI tools to support writing, synthesis, and planning.
+
+### Tools Used
+- **ChatGPT**: Used for brainstorming project framing, improving clarity of written materials (README / proposal drafts), and generating outlines for slides and evaluation plans.
+- **NotebookLM**: Used to organize and summarize uploaded research papers, extract recurring themes/gaps, and help draft literature-reflection notes based on provided sources.
+
+### How AI Outputs Were Handled
+- All AI-generated text was **reviewed, edited, and rewritten** by team members before submission.
+- Claims were kept consistent with the cited papers; when uncertain, we removed or revised statements rather than guessing.
+- AI tools were used as assistance for drafting and synthesis, not as a substitute for reading sources or making final design decisions.
+
+### Data Privacy & Secrets
+- We did **not** paste API keys, passwords, private credentials, or any sensitive personal information into AI tools.
+- Any examples of livestream chat used in documentation or testing are **synthetic or anonymized**.
+
+### Attribution
+- Any reused code, prompts, datasets, or external resources will be clearly cited in the repository (README and relevant folders).
