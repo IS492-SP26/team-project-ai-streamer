@@ -76,38 +76,11 @@ Provide visibility into risk scores and system decisions, and allow human operat
 
 ## Competitive Landscape
 
-### Raw LLM + Moderation APIs
-
-Strengths:
-- Easy to integrate  
-- High language capability  
-
-Limitations:
-- Moderation is often reactive rather than contextual  
-- Does not address multi-turn adversarial escalation  
-- No autonomy calibration interface  
-
-### Existing AI VTuber SDKs (e.g., Neuro SDK, Zerolan)
-
-Strengths:
-- Strong integration with game engines and avatars  
-- Real-time interaction pipelines  
-
-Limitations:
-- Focused on capability rather than governance  
-- Lack standardized mediation layers  
-- No built-in autonomy control mechanism  
-
-### Prompt Injection Defense Research (e.g., structured query approaches)
-
-Strengths:
-- Strong separation of instruction and data in structured systems  
-- Theoretically robust against certain injection patterns  
-
-Limitations:
-- Assumes developer-controlled structured inputs  
-- Not directly applicable to open chat livestream environments  
-- Does not provide creator-facing governance interfaces  
+| System Type | What It Does Well | UX Limitations | Reliability & Safety Gaps | Scope Limitations |
+| :--- | :--- | :--- | :--- | :--- |
+| **Raw LLM + Moderation APIs** | Strong general reasoning and instruction following; provides standardized toxicity filtering; easy integration through existing APIs. | Moderation decisions are typically binary (allow/block); limited transparency into decision logic; no built-in creator-facing governance interface. | Multi-turn interactions can weaken safety guardrails; moderation and generation often occur sequentially, increasing latency; no mechanism for dynamic autonomy adjustment. | Designed for general-purpose chat applications; not optimized for adversarial, high-volume livestream contexts; limited handling of platform-specific cultural signals (e.g., emotes, slang). |
+| **AI VTuber SDKs / Agent Frameworks** | Strong real-time integration (TTS/STT, avatar rendering, game engines); supports continuous autonomous interaction loops; enables multimodal sensing and action. | Primarily developer-oriented; limited tools for non-expert creators to monitor or adjust system behavior; governance features are secondary to capability features. | Safety controls often rely on static rules or keyword filters; limited protection against sustained adversarial steering; high autonomy without structured mediation layers. | Focused on performance and immersion rather than accountability frameworks; lack standardized mechanisms for autonomy calibration in adversarial public environments. |
+| **Prompt Injection Defense Research (e.g., structured query approaches)** | Clear separation between system instructions and user data in structured settings; demonstrates strong resilience in controlled benchmark environments; maintains task performance under tested conditions. | Assumes structured or developer-controlled inputs; not directly compatible with open, natural-language livestream dialogue; no real-time oversight interface for creators. | Primarily evaluated on static or single-turn benchmarks; limited treatment of adversarial escalation across extended multi-turn interactions. | Designed for programmatic applications (e.g., summarization, task agents) rather than persona-driven, publicly interactive livestream systems. |
 
 
 ## Initial Concept and Value Proposition
