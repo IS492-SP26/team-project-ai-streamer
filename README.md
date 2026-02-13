@@ -1,7 +1,7 @@
 https://canvas.illinois.edu/courses/64886/pages/team-project-instructions-4-check-points
 https://canvas.illinois.edu/courses/64886/discussion_topics/1075469
 
-PPT link: https://docs.google.com/presentation/d/1h8GQLqgY-Ety_Xa1QWJT5ztmHAUtH6UDSk6nKjsvMLU/edit?usp=sharing
+PPT link:https://docs.google.com/presentation/d/1yKwwDi_M0Bo9NJFYqCd6uFs8NvmaQ3cpr6yql8yh0_E/edit?usp=sharing)
 
 # C-A-B: An Integrated Governance Pipeline for AI Livestream Agents
 #### Team Member: Danni Wu, Fitz Song, Caroline Wen
