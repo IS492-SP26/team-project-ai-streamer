@@ -9,37 +9,26 @@ This project develops a research prototype that explores autonomy calibration an
 
 Rather than building another chatbot or VTuber engine, we focus on designing a governance layer that sits between a Large Language Model (LLM) and a livestream interface.
 
+## 🧠 Problem Statement and Why It Matters
 
-## Problem Statement and Why It Matters
+AI livestream agents—such as AI VTubers and autonomous digital personas—operate in environments that differ fundamentally from traditional chatbot settings. Livestream contexts are **real-time**, **public**, and **highly dynamic**. Audience interactions unfold over extended multi-turn conversations, often shaped by platform-specific slang, emotes, and financially incentivized prompts. These environments introduce reputational and platform-level risks that do not exist in closed, developer-controlled applications.
 
-AI livestream agents (e.g., AI VTubers or autonomous digital personas) operate in environments that are:
+Recent research in LLM security shows that **multi-turn adversarial interactions are significantly more effective than single-turn attacks**, as models struggle to maintain safety guardrails across extended dialogue. At the same time, governance and agent literature highlights a structural pattern: as systems become more autonomous, the **risk surface expands**.
 
-- Real-time and public  
-- Multi-turn and highly dynamic  
-- Influenced by financially incentivized prompts  
-- Shaped by platform-specific slang and emotes  
-- Subject to reputational and platform-level risk  
+This creates a core tension between:
 
-Recent LLM security research shows that multi-turn attacks are significantly more effective than single-turn prompts. At the same time, governance and agent literature highlights that increasing autonomy increases systemic risk.
+- **Autonomy**, which enables personality, improvisation, and engagement  
+- **Safety**, which requires constraint, mediation, and oversight  
 
-Most existing solutions assume structured input or developer-controlled settings. These assumptions do not hold in livestream contexts.
+Most existing defenses assume structured input formats or developer-controlled contexts. These assumptions do not hold in open livestream chat, where inputs are:
 
-Creators today face a tradeoff:
+- Unstructured natural language  
+- Culturally situated (e.g., evolving emotes and slang)  
+- Continuously interactive and multi-turn  
 
-- Restrict autonomy to ensure safety, reducing personality and engagement  
-- Allow autonomy and risk adversarial steering or policy violations  
+As a result, creators face a practical tradeoff. Restricting autonomy preserves safety but reduces expressiveness. Allowing greater autonomy increases engagement but raises the risk of adversarial steering, policy violations, or persona breakdown.
 
-We frame this as an autonomy calibration problem:
-
-How can AI livestream agents dynamically adjust their level of autonomy in adversarial public environments while preserving persona consistency and audience engagement?
-
-This matters now because:
-
-- AI agents are moving from tools to semi-autonomous actors  
-- Livestream AI personas are increasing in scale and visibility  
-- Prompt injection vulnerabilities remain unresolved in real-world deployments  
-- Non-expert creators lack accessible governance tools  
-
+We therefore frame this as an **autonomy calibration problem**. The challenge is not merely filtering harmful content, but dynamically adjusting the level of autonomy an AI agent is granted in response to contextual risk. This matters now because AI agents are transitioning from passive tools to semi-autonomous actors, livestream-based AI personas are increasing in scale and visibility, and accessible governance mechanisms remain underdeveloped for non-expert creators operating in adversarial public environments.
 
 ## Target Users and Core Tasks
 
