@@ -49,7 +49,7 @@ This paper shaped **Module C (Message Structuring)** in our system. We implement
 
 ## 3. Uncovering Model Vulnerabilities with Multi-Turn Red Teaming  
 Anonymous. (2025). *Uncovering Model Vulnerabilities with Multi-Turn Red Teaming*.  
-[ Uncovering Model Vulnerabilities with Multi-Turn Red Teaming (PDF) ](literatures/ UNCOVERING MODEL VULNERABILITIES WITH.pdf )
+[ Uncovering Model Vulnerabilities with Multi-Turn Red Teaming (PDF) ](literatures/UNCOVERING MODEL VULNERABILITIES WITH.pdf )
 ### Summary
 
 This work demonstrates that models appearing safe under single-turn benchmarks can be highly vulnerable during multi-turn conversations. The authors show that persistent adversarial strategies—such as gradual reframing and escalation—can bypass defenses that report low attack success rates in static evaluations. The study reveals a significant gap between benchmark safety and real-world deployment conditions.
@@ -82,4 +82,5 @@ This literature shifted my perspective from building a “safer model” to desi
 - **B** continuously stress-tests the system under adversarial pressure  
 
 The goal is not to eliminate risk entirely, but to calibrate autonomy dynamically in high-risk public environments.
+
 
