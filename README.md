@@ -25,9 +25,9 @@ The core challenge is not only filtering harmful content, but modeling conversat
 
 ## Target Users
 
-Primary: AI VTuber creators， Small development teams building autonomous digital personas
+Primary: AI VTuber creators，small development teams building autonomous digital personas
 
-Secondary: AI entertainment startups， Streaming platform safety researchers
+Secondary: AI entertainment startups，streaming platform safety researchers
 
 ## Core Tasks
 
