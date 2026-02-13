@@ -55,7 +55,7 @@ Llama Guard tackles the need for robust safety filtering of both user prompts an
 
 ### Insights
 
-A safety taxonomy is an interface: it defines what the system *can* detect and how decisions are explained.
+A safety taxonomy is an interface: it defines what the system can detect and how decisions are explained.
 Classifying both prompt and response helps defend against “unsafe echoing,” not just bad user inputs.
 Instruction-tuned models can return structured decisions (labels + rationales), making automation easier.
 
@@ -69,4 +69,11 @@ Overblocking risk: false positives could harm streamer experience and reduce cre
 ### Concrete Idea
 
 Design our web console around a configurable taxonomy (toxicity/NSFW/political sensitivity/persona drift), then generate a consistent JSON decision schema that downstream apps can rely on for real-time blocking or rewrites.
+
+## AI disclosure
+GPT5 helped with the paper application related wide search, help summarized and filtered the papers for selection, brainstorm ideas realted to the topic, all paper and output has been manually read.
+
+
+
+
 
