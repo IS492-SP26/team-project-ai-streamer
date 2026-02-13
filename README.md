@@ -77,10 +77,91 @@ Interaction logs feed into an automated red-team harness. An attacker model gene
 The contribution of this project lies in integrating these modules into a reproducible, evaluable governance pipeline tailored to adversarial livestream environments.
 
 ---
-
-# 🗺 Milestones and Roles
-
 ## Project Milestones
+# 📅 Milestones & Roles
+
+## Milestone 1: System Design & Infrastructure Setup (Week 1–2)
+- Finalize C-A-B architecture design
+- Define risk states and autonomy tiers
+- Set up LLM API integration and logging framework
+- Implement baseline system (LLM + single-turn moderation API)
+
+Owner:
+- System & Backend Lead (Infrastructure + baseline pipeline)
+- All members (architecture review)
+
+---
+
+## Milestone 2: Module C – Message Structuring & Injection Filtering (Week 3–4)
+
+- Implement rule-based instruction/data separation
+- Design delimiter and escape-character filtering logic
+- Add LLM-assisted classification for suspicious prompts
+- Output structured message format for downstream modules
+
+Owner:
+- Message Structuring Lead (Module C)
+- Backend Lead (integration with main pipeline)
+
+Deliverable:
+- Structured message parser integrated into baseline system
+
+---
+
+## Milestone 3: Module A – Stateful Risk Modeling & Autonomy Calibration (Week 5–6)
+
+- Design finite-state escalation model (e.g., Safe → Suspicious → Escalating → Restricted)
+- Implement conversation-level state tracking
+- Define risk accumulation and decay rules
+- Map risk states to mediation tiers (direct pass-through / mediated rewrite / restricted template)
+- Implement autonomy calibration logic
+
+Owner:
+- Stateful Governance Lead (Module A)
+- Backend Lead (policy integration)
+
+Deliverable:
+- Fully working C → A → LLM → Mediation pipeline
+
+---
+
+## Milestone 4: Module B – Automated Red-Team Harness (Week 7–8)
+
+- Develop LLM-based multi-turn adversarial script generator
+- Design adversarial scenario templates (e.g., escalation, trust-building, indirect injection)
+- Implement automated evaluation loop
+- Define evaluation metrics:
+  - Attack Success Rate (ASR)
+  - Time-to-Intervention
+  - False Positive Rate
+  - Persona Preservation Score
+
+Owner:
+- Automated Evaluation Lead (Module B)
+- Governance Lead (metric validation)
+
+Deliverable:
+- Automated adversarial testing pipeline
+
+---
+
+## Milestone 5: Final Evaluation & Demo Preparation (Week 9–10)
+
+- Benchmark baseline vs. C-A-B system
+- Run controlled multi-turn adversarial experiments
+- Analyze performance trade-offs (safety vs. responsiveness)
+- Prepare livestream-style demo scenario
+- Conduct small usability test (if feasible)
+
+Owner:
+- All team members
+- Evaluation Lead (experiment analysis)
+- UX Lead (demo flow + presentation material)
+
+Deliverable:
+- Final comparative results
+- Recorded demo showcasing system behavior under attack
+
 
 - Module C: Implementation of automated message structuring and injection filtering.
 - Module A: Development of finite-state risk escalation model and autonomy calibration policy.
@@ -88,8 +169,7 @@ The contribution of this project lies in integrating these modules into a reprod
 - Module B: Construction of automated red-team scenario generator and evaluation harness.
 - Final Evaluation: Comparative benchmarking of baseline (single-turn moderation) vs. C-A-B system under multi-turn adversarial scenarios.
 
-## Team Roles
-
+## Team Roles(Not decided yet)
 Message Structuring Lead (Module C)  
 Designs parsing logic, instruction isolation rules, and risk tagging.
 
