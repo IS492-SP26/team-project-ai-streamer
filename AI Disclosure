@@ -1,19 +1,39 @@
-## AI Disclosure (Academic Integrity & Responsible AI)
+AI Tools Used
 
-This project used generative AI tools to support writing, synthesis, and planning.
+ChatGPT
 
-### Tools Used
-- **ChatGPT**: Used for brainstorming project framing, improving clarity of written materials (README / proposal drafts), and generating outlines for slides and evaluation plans.
-- **NotebookLM**: Used to organize and summarize uploaded research papers, extract recurring themes/gaps, and help draft literature-reflection notes based on provided sources.
+Brainstorming project framing and research positioning
 
-### How AI Outputs Were Handled
-- All AI-generated text was **reviewed, edited, and rewritten** by team members before submission.
-- Claims were kept consistent with the cited papers; when uncertain, we removed or revised statements rather than guessing.
-- AI tools were used as assistance for drafting and synthesis, not as a substitute for reading sources or making final design decisions.
+Refining README, proposal, and slide structure
 
-### Data Privacy & Secrets
-- We did **not** paste API keys, passwords, private credentials, or any sensitive personal information into AI tools.
-- Any examples of livestream chat used in documentation or testing are **synthetic or anonymized**.
+Improving clarity, logical flow, and technical phrasing
 
-### Attribution
-- Any reused code, prompts, datasets, or external resources will be clearly cited in the repository (README and relevant folders).
+NotebookLM
+
+Synthesizing uploaded research papers
+
+Extracting recurring themes, gaps, and design implications
+
+Supporting structured literature reflection drafting
+
+✍️ How AI Was Used
+
+AI tools were used to assist writing, synthesis, and organization.
+
+All outputs were reviewed, edited, and refined by team members before submission.
+
+Literature insights reflect our own interpretation and understanding.
+
+AI was not used to fabricate results, experiments, or citations.
+
+🔐 Privacy & Responsible Use
+
+No API keys, credentials, or sensitive data were shared.
+
+Example livestream chat scenarios are synthetic or anonymized.
+
+We followed course guidelines regarding attribution and transparency.
+
+📌 Attribution
+
+If any external code, datasets, or prompts are reused in later stages, they will be clearly cited in the repository.
