@@ -117,6 +117,3 @@ Chen, S., Piet, J., Sitawarin, C., & Wagner, D. (2024). *StruQ: Defending agains
 Chennabasappa, S., et al. (2025). *LlamaFirewall: An open source guardrail system for building secure AI agents.*
 
 Xu, W., & Parhi, K. K. (2025). *A survey of attacks on large language models.*
-
-Anonymous. (2024). *Uncovering model vulnerabilities with multi-turn red teaming.*
-
