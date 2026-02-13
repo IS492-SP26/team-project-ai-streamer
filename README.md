@@ -6,7 +6,7 @@ PPT link: https://docs.google.com/presentation/d/1h8GQLqgY-Ety_Xa1QWJT5ztmHAUtH6
 # C-A-B: An Integrated Governance Pipeline for AI Livestream Agents
 Team Member: Danni Wu, Fitz Song, Caroline Wen
 
-This repository implements a three-layer research prototype (C-A-B) designed to operationalize security and governance mechanisms for AI agents operating in high-tempo, adversarial livestream chat environments. Rather than proposing a new model architecture, this project focuses on system-level integration: translating ideas from prompt-injection defense, guardrails, and automated red-teaming into a deployable and evaluable pipeline for livestream contexts.
+This repository implements a three-layer research prototype (C-A-B) designed to operationalize security and governance mechanisms for AI agents operating in high-tempo, adversarial livestream chat environments. Rather than proposing a new model architecture, this project focuses on system-level integration: translating ideas from prompt-injection defense, guardrails, and automated red-teaming into a deployable and evaluable pipeline for livestream contexts, which is a system-level integration and evaluation framework tailored to adversarial, multi-turn livestream environments.
 
 ---
 
@@ -162,14 +162,7 @@ Deliverable:
 - Final comparative results
 - Recorded demo showcasing system behavior under attack
 
-
-- Module C: Implementation of automated message structuring and injection filtering.
-- Module A: Development of finite-state risk escalation model and autonomy calibration policy.
-- Escalation Policy Design: Mapping risk states to mediation tiers.
-- Module B: Construction of automated red-team scenario generator and evaluation harness.
-- Final Evaluation: Comparative benchmarking of baseline (single-turn moderation) vs. C-A-B system under multi-turn adversarial scenarios.
-
-## Team Roles(Not decided yet)
+## Team Roles
 Message Structuring Lead (Module C)  
 Designs parsing logic, instruction isolation rules, and risk tagging.
 
