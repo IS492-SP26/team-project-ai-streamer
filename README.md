@@ -8,7 +8,7 @@ Team Member: Danni Wu, Fitz Song, Caroline Wen
 
 This repository implements a three-layer research prototype (C-A-B) designed to operationalize security and governance mechanisms for AI agents operating in high-tempo, adversarial livestream chat environments. Rather than proposing a new model architecture, this project focuses on system-level integration: translating ideas from prompt-injection defense, guardrails, and automated red-teaming into a deployable and evaluable pipeline for livestream contexts, which is a system-level integration and evaluation framework tailored to adversarial, multi-turn livestream environments.
 
-![C-A-B Pipeline Architecture](team-project-ai-streamer/Infographic.png)
+![C-A-B Pipeline Architecture](Infographic.png)
 
 ---
 
