@@ -38,24 +38,26 @@ This paper proposes system-level design patterns to defend LLM agents against pr
 This paper shaped **Module C (Message Structuring)** in our system. We implement automatic input normalization and instruction isolation to prevent raw livestream chat from interfering with internal system-level prompts.
 
 ---
-## 3. Uncovering Model Vulnerabilities with Multi-Turn Red Teaming  
-Anonymous. (2025). *Uncovering Model Vulnerabilities with Multi-Turn Red Teaming*.  [https://arxiv.org/abs/2509.10546](https://openreview.net/forum?id=fFtmpqLFvw)
+## 3. A Survey of Attacks on Large Language Models  
+Xu, W., & Parhi, K. K. (2025). *A survey of attacks on large language models.* IEEE. [https://arxiv.org/abs/2307.06435  ](https://arxiv.org/abs/2505.12567)
+
 
 ### Summary
-This work demonstrates that models appearing safe under single-turn benchmarks can be highly vulnerable during multi-turn conversations. The authors show that persistent adversarial strategies—such as gradual reframing and escalation—can bypass defenses that report low attack success rates in static evaluations. The study reveals a significant gap between benchmark safety and real-world deployment conditions.
+This paper provides a comprehensive taxonomy of security threats across the lifecycle of large language models. The authors categorize attacks into three primary phases: training-time (e.g., data poisoning and backdoors), inference-time (e.g., jailbreaking and prompt injection), and availability & integrity attacks. A key finding is that vulnerabilities do not exist at a single stage but are distributed across the full deployment pipeline. The survey also highlights how embedding LLMs into agentic systems expands the attack surface, particularly through tool usage and multi-agent interactions. Overall, the work argues that many failures attributed to “model misalignment” are in fact system-level weaknesses.
 
-### Insights
-- Single-turn safety evaluations underestimate real-world conversational risk.
-- Attackers can embed harmful intent within benign conversational framing.
-- Conversational memory increases capability but also expands the attack surface.
+### 3 Insights I Learned
+- **The vulnerability of agency.** I initially assumed that agent-based systems might be more robust because of their planning capabilities. This survey changed that view by showing that tool invocation and inter-agent communication introduce new attack vectors, such as shadow process attacks and peer collusion. Governance must therefore monitor the action layer, not only generated text.
+
+- **Syntactic vs. semantic triggers.** Adversarial manipulation does not always rely on obviously harmful language. Structural patterns and formatting tricks can activate undesirable behaviors without triggering toxicity classifiers. This insight highlights the limitations of traditional keyword-based moderation systems.
+
+- **The “arrow and shield” dynamic.** The survey frames security as an ongoing arms race. As attack methods evolve toward automation and iterative refinement, defenses must also become adaptive rather than static rule sets.
 
 ### Limitations / Risks
-- Human red teaming does not scale easily for continuous evaluation.
-- Overly defensive responses may reduce system responsiveness and engagement.
+- **Lack of unified benchmarking.** The survey notes the absence of standardized evaluation frameworks across attack categories, making it difficult to objectively compare robustness claims.
+- **Defensive over-specialization.** Many mitigation strategies target narrow threat types, which may leave systems exposed to cross-phase or adaptive attacks.
 
 ### Concrete Idea for My Project
-This paper motivated **Module A (Stateful Risk Modeling)**. Instead of evaluating each message independently, our system maintains a finite-state risk model that tracks escalation patterns across turns and adjusts autonomy levels accordingly.
-
+This survey directly informed Module C (Message Structuring) in the C-A-B pipeline. Inspired by the discussion of syntactic backdoors and escape-character manipulation, I will implement recursive input normalization and delimiter protection to prevent structural spoofing in livestream chat. This ensures that untrusted user input cannot interfere with internal system-level instructions in high-tempo conversational settings.
 ---
 
 ## Overall Reflection
@@ -68,6 +70,7 @@ This literature shifted my perspective from building a “safer model” to desi
 - **B** continuously stress-tests the system under adversarial pressure  
 
 The goal is not to eliminate risk entirely, but to calibrate autonomy dynamically in high-risk public environments.
+
 
 
 
