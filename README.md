@@ -1,10 +1,8 @@
 https://canvas.illinois.edu/courses/64886/pages/team-project-instructions-4-check-points
 https://canvas.illinois.edu/courses/64886/discussion_topics/1075469
-# team-project-ai-streamer
-team-project-ai-streamer created by GitHub Classroom
-- Team Member: Danni Wu, Fitz Song, Caroline Wen
 
 # Autonomy-Calibrated Governance for AI Livestream Agents
+- Team Member: Danni Wu, Fitz Song, Caroline Wen
 This project develops a research prototype that explores autonomy calibration and governance mechanisms for AI-driven livestream agents operating in open public environments. Rather than building another chatbot or VTuber engine, we focus on designing a governance layer that sits between a Large Language Model (LLM) and a livestream interface.
 
 ## 🧠 Problem Statement and Why It Matters
