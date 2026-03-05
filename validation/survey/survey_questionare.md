@@ -23,7 +23,8 @@ All responses are anonymous. Thank you for your support!
 - AI agent developer / LLM developer  
 - Viewer interested in AI-powered content  
 - Researcher/student working with LLMs  
-- No experience, just curious  
+- No experience, just curious 
+- Livestream moderator/Community manager 
 - Other: _______
 
 **2. Have you used any of these tools or systems? (Select all that apply)**  
