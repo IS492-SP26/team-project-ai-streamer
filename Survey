@@ -1,0 +1,117 @@
+# User Survey: Safety & Governance Needs for AI Livestream Agents
+
+## Introduction
+We are students at UIUC working on a short research project (about **2 minutes**, **4 sections**, **13 questions**) to understand the real challenges creators face when using AI agents or AI VTubers in livestream environments.
+
+Our goal is to help AI VTubers (e.g., Neuro-sama–style interactive agents) develop **more safely, more stably, and with better control**, especially when dealing with fast-moving chats, risky interactions, and adversarial viewers.
+
+Our prototype system, **C-A-B**, aims to:
+1. reduce manipulation risks (users tricking the AI)  
+2. prevent multi-turn safety failures (AI becoming unsafe over time)  
+3. provide creators more transparency and control  
+4. automatically stress-test agents before going live  
+
+All responses are anonymous. Thank you for your support!
+
+---
+
+# SECTION 1 — Participant Background
+
+**1. Which of the following best describes you? (Select all that apply)**  
+- AI VTuber creator  
+- Livestream creator (Twitch/YouTube/etc.)  
+- AI agent developer / LLM developer  
+- Viewer interested in AI-powered content  
+- Researcher/student working with LLMs  
+- No experience, just curious  
+- Other: _______
+
+**2. Have you used any of these tools or systems? (Select all that apply)**  
+- AI VTuber / virtual avatar tools  
+- Custom AI agents (LangChain, OpenAI API, etc.)  
+- ChatGPT / Claude / Gemini for interactive content  
+- Livestream moderation tools  
+- Automated evaluation / red-teaming tools  
+- Other: _______
+
+---
+
+# SECTION 2 — Current Pain Points  
+*(Validate whether the problems we aim to solve actually exist)*
+
+**3. Have you ever seen an AI behave incorrectly due to chat messages?**  
+- Yes — it got manipulated or tricked  
+- Yes — it gradually became unsafe over multiple turns  
+- Yes — it lost its character/personality  
+- Yes — for another reason (please specify)  
+- Not really  
+- Other: _______
+
+**4. How often do you see viewers trying to “trick” or “exploit” AI agents?**  
+Scale 1–5 (Never → Very often)
+
+**5. Which problems do you consider most serious in AI livestreams? (Select all)**  
+- AI being manipulated by viewers (prompt injection / roleplay traps)  
+- AI responses becoming riskier over multiple turns  
+- Moderation tools reacting too slowly or inconsistently  
+- AI drifting away from its persona/character  
+- Difficulty understanding why the AI made a certain decision  
+- Not knowing when a conversation is becoming risky  
+- I have not encountered major issues  
+- Other: _______
+
+---
+
+# SECTION 3 — Reaction to C-A-B Concept
+
+We want to understand how creators feel about the following ideas:
+
+**C — Message Structuring**  
+Separates real chat messages from hidden attacks or tricks → reduces manipulation.
+
+**A — Stateful Risk Modeling**  
+Tracks the entire conversation, not just single messages → detects escalation early.
+
+**B — Automated Red-Team Testing**  
+Generates adversarial scenarios before going live → helps identify weaknesses.
+
+---
+
+**6. How valuable is automatic separation of normal chat vs. hidden attacks? (Module C)**  
+Scale 1–5 (Not valuable → Extremely valuable)
+
+**7. How useful is detecting when the overall conversation becomes risky? (Module A)**  
+Scale 1–5 (Not useful → Extremely useful)
+
+**8. How important is automatic autonomy switching (full → safe rewrite → strict templates)?**  
+Scale 1–5 (Not important → Very important)
+
+**9. Would automatic adversarial stress-testing before a stream be useful? (Module B)**  
+Scale 1–5 (No → Extremely useful)
+
+**10. How valuable would a dashboard be that helps you understand:**  
+- when the chat becomes risky  
+- when the AI intervenes or rewrites  
+- why the AI responded in a certain way  
+- early warnings before escalation  
+Scale 1–5 (Not useful → Extremely valuable)
+
+**11. Which module feels most useful to you? (Choose one)**  
+- C — Message Structuring & Injection Filtering  
+- A — Stateful Risk Modeling & Autonomy Calibration  
+- B — Automated Red-Team Evaluation  
+- All are equally useful  
+- None seem useful  
+- Other: _______
+
+---
+
+# SECTION 4 — Future Features and Expectations
+
+**12. If you were using an AI livestream agent, what would you worry about the most?**  
+(Open-ended)
+
+**13. What safety or governance features would you like to see in such a system?**  
+(Open-ended)
+
+---
