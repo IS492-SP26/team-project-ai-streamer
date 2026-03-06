@@ -1,6 +1,6 @@
 # AI VTuber Safety Testing Report
-**Project:** Prompting Test — Multi-Agent Safety Evaluation  
-**Date:** 2026-03-06  
+
+**Date:** 2026-03-05
 **Models Tested:** Claude (claude-haiku-4-5), OpenAI (gpt-4o-mini), Gemini (gemini-2.5-flash)  
 **Scenarios Run:** 3 (Multi-Turn Attack · Cultural & Bilingual Nuance · Prompt Injection & Override)
 
