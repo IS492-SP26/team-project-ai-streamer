@@ -45,7 +45,7 @@ def _compute_tool_metrics(scenario: Dict[str, Any]) -> Dict[str, ToolMetrics]:
 
     metrics: Dict[str, ToolMetrics] = {
         "claude": ToolMetrics(None, 0, 0),
-        "groq": ToolMetrics(None, 0, 0),
+        "openai": ToolMetrics(None, 0, 0),
         "gemini": ToolMetrics(None, 0, 0),
     }
 
@@ -134,7 +134,7 @@ def generate_markdown_report(scenarios: List[Dict[str, Any]]) -> str:
         detection_row = [
             "Detection Turn",
             _format_detection(metrics["claude"].detection_turn),
-            _format_detection(metrics["groq"].detection_turn),
+            _format_detection(metrics["openai"].detection_turn),
             _format_detection(metrics["gemini"].detection_turn),
         ]
         lines.append(
@@ -146,7 +146,7 @@ def generate_markdown_report(scenarios: List[Dict[str, Any]]) -> str:
         expected_row = [
             "Expected Turn",
             _format_detection(claude_expected),
-            _format_detection(groq_expected),
+            _format_detection(openai_expected),
             _format_detection(gemini_expected),
         ]
         lines.append(
@@ -158,7 +158,7 @@ def generate_markdown_report(scenarios: List[Dict[str, Any]]) -> str:
         fp_row = [
             "False Positives (Typical)",
             str(metrics["claude"].false_positives_typical),
-            str(metrics["groq"].false_positives_typical),
+            str(metrics["openai"].false_positives_typical),
             str(metrics["gemini"].false_positives_typical),
         ]
         lines.append(
@@ -171,7 +171,7 @@ def generate_markdown_report(scenarios: List[Dict[str, Any]]) -> str:
         lines.append("### Key Findings:")
 
         lines.append(
-            "- Claude, Groq (Llama), and Gemini often refuse clearly harmful turns "
+            "- Claude, OpenAI, and Gemini often refuse clearly harmful turns "
             "once escalation is obvious, but tend to lag behind the ideal C-A-B signal."
         )
         lines.append(
@@ -189,10 +189,10 @@ def generate_markdown_report(scenarios: List[Dict[str, Any]]) -> str:
                 str(scenario_id),
                 scenario_name,
                 _format_detection(metrics["claude"].detection_turn),
-                _format_detection(metrics["groq"].detection_turn),
+                _format_detection(metrics["openai"].detection_turn),
                 _format_detection(metrics["gemini"].detection_turn),
                 _format_detection(claude_expected),
-                _format_detection(groq_expected),
+                _format_detection(openai_expected),
                 _format_detection(gemini_expected),
             ]
         )
@@ -200,7 +200,7 @@ def generate_markdown_report(scenarios: List[Dict[str, Any]]) -> str:
     lines.append("## Cross-Scenario Performance")
     lines.append("")
     lines.append(
-        "| Scenario | Name | Claude Detect | Groq Detect | Gemini Detect | Claude Expected | Groq Expected | Gemini Expected |"
+        "| Scenario | Name | Claude Detect | OpenAI Detect | Gemini Detect | Claude Expected | OpenAI Expected | Gemini Expected |"
     )
     lines.append(
         "|----------|------|---------------|-------------|---------------|-----------------|---------------|-----------------|"
@@ -220,7 +220,7 @@ def generate_markdown_report(scenarios: List[Dict[str, Any]]) -> str:
 
     lines.append("## Gap Analysis (Existing Tools vs C-A-B)")
     lines.append(
-        "- **Latency Gap**: Claude, Groq, and Gemini often trigger later than "
+        "- **Latency Gap**: Claude, OpenAI, and Gemini often trigger later than "
         "the expected detection turns, leaving a window where the VTuber "
         "could already be at risk."
     )
