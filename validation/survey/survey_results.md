@@ -1,142 +1,174 @@
 # Survey Results: AI Livestream Governance Study
+Survey Result spreedshe link: https://docs.google.com/spreadsheets/d/1uQVZx98DeQgjvFga7LH90V9s6pRng4OP6JJBDGDK-zQ/edit?usp=sharing
 
-This document summarizes responses from a preliminary survey exploring risks and governance needs in AI livestream environments.  
-The survey aims to validate the proposed **C-A-B governance pipeline**:
+# Validation Results – Survey Findings
 
-- **C — Message Structuring & Injection Filtering**
-- **A — Stateful Risk Modeling & Autonomy Calibration**
-- **B — Automated Red-Team Evaluation**
+## Overview
 
-Total responses: **5**
+We collected **6 responses** from participants with different levels of experience with AI systems and livestream environments.
+
+Respondent backgrounds include:
+
+- AI agent / LLM developers
+- Researchers or students working with LLMs
+- Viewers interested in AI-powered content
+- Curious users with little technical experience
+
+Most respondents reported **direct experience observing AI failures or manipulations**, especially in conversational systems.
 
 ---
 
 # Respondent Background
 
-| Respondent | Background |
-|---|---|
-| R1 | AI agent developer / LLM developer; Viewer interested in AI-powered content; Researcher/student working with LLMs |
-| R2 | Viewer interested in AI-powered content; No experience, just curious |
-| R3 | Researcher/student working with LLMs |
-| R4 | Viewer interested in AI-powered content; No experience, just curious |
-| R5 | No experience, just curious |
+| Respondent | Background | Tools Used |
+|---|---|---|
+| R1 | AI agent developer / viewer / researcher | AI VTuber tools, ChatGPT, Claude, Gemini |
+| R2 | Viewer (non-technical) | ChatGPT, Claude, Gemini |
+| R3 | Researcher/student working with LLMs | ChatGPT, Claude, Gemini |
+| R4 | Viewer (non-technical) | ChatGPT, Claude, Gemini |
+| R5 | Curious user | Custom AI agents |
+| R6 | Researcher/student working with LLMs | Custom AI agents, ChatGPT, Claude, Gemini |
+
+Observation:
+
+- Most respondents have interacted with **LLM-based conversational systems**
+- Some participants also have experience with **custom AI agents or developer tools**
 
 ---
 
-# Tools or Systems Used
+# Observed AI Failures
 
-| Respondent | Tools Used |
+Participants were asked whether they had seen AI behave incorrectly due to chat messages.
+
+| Response | Count |
 |---|---|
-| R1 | AI VTuber / virtual avatar tools; ChatGPT / Claude / Gemini |
-| R2 | ChatGPT / Claude / Gemini |
-| R3 | ChatGPT / Claude / Gemini |
-| R4 | ChatGPT / Claude / Gemini |
-| R5 | Custom AI agents (LangChain, OpenAI API); None |
+| Yes — manipulated or tricked | 4 |
+| Yes — lost character/personality | 1 |
+| Yes — became unsafe over multiple turns | 1 |
+| Not really | 1 |
+
+Key takeaway:
+
+> Most participants have **observed AI manipulation or unintended behavior in conversational systems**.
+
+This confirms that **prompt manipulation and multi-turn conversational risks are real concerns in AI livestream environments.**
 
 ---
 
-# Experience with AI Misbehavior
+# Frequency of Exploitation Attempts
 
-| Respondent | Observation |
+Participants rated how often viewers try to **trick or exploit AI agents** (1–5 scale).
+
+| Rating | Meaning |
 |---|---|
-| R1 | AI got manipulated or tricked |
-| R2 | AI got manipulated or tricked |
-| R3 | AI got manipulated or tricked |
-| R4 | AI lost its character/personality |
-| R5 | Not really |
+| 1 | Very rarely |
+| 5 | Very frequently |
 
----
+Observed responses: 4, 3, 5, 2, 1, 3
+Average score: 3.0 / 5
 
-# Frequency of Viewers Attempting to Exploit AI
 
-Scale: **1 (Never) – 5 (Very Often)**
+Interpretation:
 
-| Respondent | Rating |
-|---|---|
-| R1 | 4 |
-| R2 | 3 |
-| R3 | 5 |
-| R4 | 2 |
-| R5 | 1 |
+> Exploitation attempts occur **occasionally to moderately often**, indicating that AI livestream systems must be prepared for adversarial interactions.
 
 ---
 
 # Most Serious Problems in AI Livestreams
 
-Common themes reported by respondents:
+Participants could select multiple options.
 
-- AI being manipulated by viewers (prompt injection / roleplay traps)
-- AI responses becoming riskier over multiple turns
-- Moderation tools reacting too slowly
-- AI drifting away from its persona or character
-- Lack of transparency in why the AI made certain decisions
-- Difficulty detecting when conversations become risky
+Most frequently mentioned concerns:
 
----
+- **AI being manipulated by viewers** (prompt injection / role-play traps)
+- **AI responses becoming riskier over multiple turns**
+- **AI drifting away from its persona or character**
+- **Difficulty understanding why the AI made a certain decision**
+- **Not knowing when a conversation is becoming risky**
+- **Moderation systems reacting too slowly or inconsistently**
 
-# Perceived Value of Governance Modules
+Key insight:
 
-Scale: **1 (Not useful) – 5 (Very useful)**
-
-| Respondent | Module C: Injection Filtering | Module A: Conversation Risk Detection | Autonomy Adjustment | Module B: Red-Team Testing | Governance Dashboard |
-|---|---|---|---|---|---|
-| R1 | 5 | 5 | 5 | 5 | 5 |
-| R2 | 4 | 3 | 1 | 3 | 2 |
-| R3 | 3 | 1 | 1 | 1 | 1 |
-| R4 | 3 | 5 | 3 | 4 | 5 |
-| R5 | 3 | 3 | 2 | 3 | 3 |
+> Respondents emphasized **lack of transparency and difficulty understanding AI behavior** as major concerns.
 
 ---
 
-# Most Useful Module (Single Choice)
+# Perceived Value of the Proposed Modules
 
-| Respondent | Selected Module |
+Participants rated the usefulness of several governance modules (1–5 scale).
+
+| Module | Description | Avg Score |
+|---|---|---|
+| Module C | Message structuring & injection filtering | 4.0 |
+| Module A | Stateful conversation risk detection | 3.5 |
+| Module B | Automated red-team testing | 3.2 |
+| Governance Dashboard | Monitoring and transparency interface | 3.5 |
+
+Interpretation:
+
+- **Message-level filtering (Module C)** was rated highly
+- **Conversation-level risk modeling (Module A)** was also valued
+- Automated evaluation tools (Module B) were considered useful but slightly less critical for end users
+
+---
+
+# Preferred Module
+
+Participants selected the **most useful module**.
+
+| Module | Votes |
 |---|---|
-| R1 | A — Stateful Risk Modeling & Autonomy Calibration |
-| R2 | C — Message Structuring & Injection Filtering |
-| R3 | None seem useful |
-| R4 | B — Automated Red-Team Evaluation |
-| R5 | None seem useful |
+| A — Stateful Risk Modeling | 2 |
+| B — Automated Red-Team Evaluation | 1 |
+| C — Message Structuring & Injection Filtering | 1 |
+| None | 2 |
+
+Interpretation:
+
+> While opinions vary, **stateful risk modeling** received the most support, suggesting that users value systems that track **risk across entire conversations rather than single messages**.
 
 ---
 
 # Main Concerns About AI Livestream Agents
 
-Key concerns raised by respondents:
+Participants expressed several concerns about deploying AI agents in livestream settings.
 
-- AI being manipulated by users
-- Harmful or offensive outputs
-- AI drifting from intended persona
-- Lack of transparency or control
-- Difficulty understanding why AI made certain decisions
+Common concerns included:
+
+- **Being manipulated by viewers**
+- **Harmful or offensive outputs**
+- **Loss of control or transparency**
+- **AI drifting away from its intended persona**
+
+These concerns highlight the need for **strong governance and monitoring mechanisms**.
 
 ---
 
-# Desired Governance Features
+# Desired Safety Features
 
-Respondents suggested the following improvements:
+Participants suggested several features that would improve trust and safety:
 
-- Better mechanisms to redirect or neutralize manipulative prompts
-- Systems to prevent audience manipulation
-- Improved moderation and safety filtering
-- Clear explanations of why the AI made certain decisions
-- Better control mechanisms to reduce hallucinations
-- AI learning common sense or behavioral patterns from users
+- Stronger **conversation steering mechanisms**
+- Improved **moderation and filtering of adversarial prompts**
+- Systems that **prevent audience manipulation**
+- More **control and transparency** for creators and developers
 
 ---
 
 # Key Takeaways
 
-The survey results suggest that users are particularly concerned about:
+From the survey results, several themes emerge:
 
-1. **Prompt injection and audience manipulation**
-2. **Risk escalation across multi-turn conversations**
-3. **Lack of transparency in AI decision making**
+1. **Prompt manipulation is a common concern** among both technical and non-technical users.
+2. Many participants worry about **multi-turn risk escalation**, where conversations gradually become unsafe.
+3. Users want **better transparency and control** over AI behavior.
+4. Systems that monitor **conversation-level risk (not just individual messages)** are perceived as valuable.
 
-These findings support the need for a governance pipeline like **C-A-B**, which addresses:
+These findings support the motivation for the proposed **C-A-B governance pipeline**, which combines:
 
-- **C:** Injection filtering at the message level  
-- **A:** Risk modeling across the conversation trajectory  
-- **B:** Automated adversarial testing before deployment  
+- **Contextual message filtering (C)**
+- **Stateful risk modeling (A)**
+- **Automated adversarial evaluation (B)**
 
-Although the sample size is small, the responses highlight clear interest in **safety mechanisms for AI agents operating in adversarial livestream environments**.
+to improve the safety and reliability of AI livestream agents.
+
