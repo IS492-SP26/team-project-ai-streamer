@@ -1,14 +1,14 @@
 """
 risk_panel.py — Standalone Streamlit demo for Module C + Mock Module A.
 
+Supports dark/light mode toggle via sidebar.
+
 Launch from repo root:
     streamlit run app/frontend/risk_panel.py
 
-Or from app/:
-    streamlit run frontend/risk_panel.py
-
 For Week 2 integration, import the reusable pieces instead:
     from frontend.components import render_risk_panel, render_event_log
+    from frontend.theme import get_theme, inject_theme_css, render_theme_toggle
 """
 
 from __future__ import annotations
@@ -18,10 +18,10 @@ import sys
 import time
 
 # ---------------------------------------------------------------------------
-# Path setup — make `module_c` and `frontend` importable regardless of cwd
+# Path setup
 # ---------------------------------------------------------------------------
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-_APP_DIR = os.path.dirname(_THIS_DIR)           # app/
+_APP_DIR = os.path.dirname(_THIS_DIR)
 if _APP_DIR not in sys.path:
     sys.path.insert(0, _APP_DIR)
 
@@ -32,14 +32,33 @@ from frontend.mock_state_machine import update_state  # noqa: E402
 from frontend.components import (                 # noqa: E402
     render_risk_panel,
     render_event_log,
+)
+from frontend.theme import (                      # noqa: E402
+    get_theme,
+    inject_theme_css,
+    render_theme_toggle,
     STATE_EMOJI,
 )
 
 
 # ---------------------------------------------------------------------------
-# Page config (only set here — components.py never touches it)
+# Page config
 # ---------------------------------------------------------------------------
-st.set_page_config(page_title="C-A-B Governance Console", page_icon="🛡️", layout="wide")
+st.set_page_config(
+    page_title="C-A-B Governance Console",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ---------------------------------------------------------------------------
+# Theme init (must be before any rendering)
+# ---------------------------------------------------------------------------
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = True
+
+theme = get_theme()
+inject_theme_css(theme)
 
 
 # ---------------------------------------------------------------------------
@@ -54,13 +73,43 @@ if "turn" not in st.session_state:
 
 
 # ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
+with st.sidebar:
+    render_theme_toggle()
+
+    st.divider()
+    st.markdown("### Session")
+    st.caption(f"Turns: {st.session_state.turn}")
+    if st.session_state.events:
+        latest = st.session_state.events[-1]
+        st.caption(f"State: {STATE_EMOJI.get(latest['risk_state'], '')} {latest['risk_state']}")
+        st.caption(f"Score: {latest['risk_score']:.2f}")
+
+    st.divider()
+    if st.button("🔄 Reset Session", use_container_width=True):
+        st.session_state.history = []
+        st.session_state.events = []
+        st.session_state.turn = 0
+        st.rerun()
+
+    st.divider()
+    st.markdown("### About")
+    st.caption(
+        "C-A-B Governance Pipeline\n\n"
+        "Module C: Message Filtering\n"
+        "Module A: Mock State Machine\n"
+        "Output Scanner: Pre-delivery check"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Main layout
 # ---------------------------------------------------------------------------
 
 def main() -> None:
     st.title("🛡️ C-A-B Governance Console")
-    st.caption("Module C + Mock Module A — standalone demo  ·  "
-               "run `streamlit run app/frontend/risk_panel.py`")
+    st.caption("Module C + Mock Module A — standalone demo")
 
     col_chat, col_status = st.columns([3, 2])
 
@@ -68,17 +117,29 @@ def main() -> None:
     with col_chat:
         st.subheader("💬 Livestream Chat Simulator")
 
-        # Fixed-height scrollable container (Streamlit 1.30+)
         chat_box = st.container(height=520)
         with chat_box:
             for ev in st.session_state.events:
                 emoji = STATE_EMOJI.get(ev["risk_state"], "⚪")
+                state_color = theme["state_colors"].get(ev["risk_state"], "#666")
+
                 with st.chat_message("user"):
-                    st.markdown(f"**Turn {ev['turn_number']}** {emoji} `{ev['risk_state']}`")
+                    st.markdown(
+                        f'**Turn {ev["turn_number"]}** '
+                        f'<span style="color:{state_color};font-weight:bold;">'
+                        f'{emoji} {ev["risk_state"]}</span>',
+                        unsafe_allow_html=True,
+                    )
                     st.write(ev["user_message"])
+
                 with st.chat_message("assistant"):
                     if ev["action"] == "block":
-                        st.error(f"🚫 **BLOCKED** — {ev['block_reason']}")
+                        st.markdown(
+                            f'<div class="cab-blocked">'
+                            f'🚫 <b>BLOCKED</b> — {ev["block_reason"]}'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
                     else:
                         st.write(ev["ai_response"])
 
@@ -88,16 +149,13 @@ def main() -> None:
             st.session_state.turn += 1
             turn = st.session_state.turn
 
-            # --- Module C ---
             t0 = time.time()
             c_result = process_message(user_input, st.session_state.history)
             c_ms = (time.time() - t0) * 1000
 
-            # --- Mock Module A ---
             a_result = update_state(c_result)
             a_result["turn_number"] = turn
 
-            # --- Output Scanner (post-LLM hook) ---
             ai_resp = a_result["ai_response"]
             if a_result["action"] != "block":
                 scan = scan_output(ai_resp, a_result["risk_state"])
@@ -124,19 +182,12 @@ def main() -> None:
     with col_status:
         st.subheader("📊 Risk Status")
         if st.session_state.events:
-            render_risk_panel(st.session_state.events[-1])
+            render_risk_panel(st.session_state.events[-1], theme)
         else:
             st.info("Send a message to start monitoring.")
 
         st.subheader("📋 Recent Events")
-        render_event_log(st.session_state.events)
-
-        st.divider()
-        if st.button("🔄 Reset Session"):
-            st.session_state.history = []
-            st.session_state.events = []
-            st.session_state.turn = 0
-            st.rerun()
+        render_event_log(st.session_state.events, theme)
 
 
 main()

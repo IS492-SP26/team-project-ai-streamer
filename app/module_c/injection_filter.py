@@ -58,8 +58,8 @@ _add(r"(?:new|updated?)\s+system\s+prompt\s*:", "system_prompt_rewrite")
 _add(r"system\s+message\s+override", "system_message_override")
 
 # --- Rule injection ---
-_add(r"(?:^|\n)\s*rule\s+\d+\s*:", "rule_injection")
-_add(r"(?:^|\n)\s*(?:instruction|directive|command)\s+\d+\s*:", "numbered_instruction")
+_add(r"\brule\s+\d+\s*:", "rule_injection")
+_add(r"\b(?:instruction|directive|command)\s+\d+\s*:", "numbered_instruction")
 
 # --- Instruction override ---
 _add(r"ignore\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|rules?|prompts?|guidelines?)", "ignore_instructions")

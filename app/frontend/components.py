@@ -1,76 +1,51 @@
 """
 components.py — Reusable Streamlit components for C-A-B governance UI.
 
-Import and call these from any Streamlit page:
+Supports dark/light theme via the theme system:
 
     from frontend.components import render_risk_panel, render_event_log
+    from frontend.theme import get_theme, inject_theme_css
 
-    render_risk_panel(state_data)
-    render_event_log(events)
+    theme = get_theme()
+    inject_theme_css(theme)
+    render_risk_panel(state_data, theme)
+    render_event_log(events, theme)
 
 No page config, no session state, no side effects on import.
 """
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import streamlit as st
 
-
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-
-STATE_COLORS = {
-    "Safe": "#22c55e",
-    "Suspicious": "#eab308",
-    "Escalating": "#f97316",
-    "Restricted": "#ef4444",
-}
-
-STATE_EMOJI = {
-    "Safe": "🟢",
-    "Suspicious": "🟡",
-    "Escalating": "🟠",
-    "Restricted": "🔴",
-}
+from frontend.theme import LIGHT_THEME, STATE_EMOJI
 
 
 # ---------------------------------------------------------------------------
 # render_risk_panel
 # ---------------------------------------------------------------------------
 
-def render_risk_panel(state_data: Dict) -> None:
+def render_risk_panel(state_data: Dict, theme: Optional[Dict] = None) -> None:
     """
-    Display current risk status.
+    Display current risk status with theme support.
 
     Args:
-        state_data: Module A → Frontend dict::
-
-            {
-                "risk_state": str,     # Safe / Suspicious / Escalating / Restricted
-                "risk_score": float,   # 0.0–1.0
-                "action": str,         # pass / scan / block
-                "ai_response": str,
-                "block_reason": str,
-                "risk_tags": list,
-                "turn_number": int,
-                # optional extras accepted but not required:
-                "injection_blocked": bool,
-                "module_c_latency_ms": float,
-            }
+        state_data: Module A → Frontend dict
+        theme: Theme dict from get_theme(). Falls back to LIGHT_THEME.
     """
+    if theme is None:
+        theme = LIGHT_THEME
+
     state = state_data.get("risk_state", "Safe")
     score = state_data.get("risk_score", 0.0)
-    color = STATE_COLORS.get(state, "#666")
+    color = theme["state_colors"].get(state, "#666")
     emoji = STATE_EMOJI.get(state, "⚪")
 
-    # State pill
+    # State pill — uses theme-aware class
     st.markdown(
-        f'<div style="background:{color};color:#fff;padding:12px 20px;'
-        f'border-radius:8px;font-size:20px;font-weight:bold;text-align:center;'
-        f'margin-bottom:12px;">'
+        f'<div class="cab-state-pill" style="background:{color};">'
         f'{emoji} {state} — Score: {score:.2f}'
         f'</div>',
         unsafe_allow_html=True,
@@ -82,36 +57,54 @@ def render_risk_panel(state_data: Dict) -> None:
     with c2:
         st.metric("Turn", state_data.get("turn_number", 0))
 
+    # Risk tags — themed
     tags = state_data.get("risk_tags", [])
     if tags:
         st.markdown("**Risk Tags:**")
-        for t in tags:
-            st.code(t)
+        tag_html = " ".join(f'<span class="cab-tag">{t}</span>' for t in tags)
+        st.markdown(tag_html, unsafe_allow_html=True)
 
+    # Block reason
     reason = state_data.get("block_reason", "")
     if reason:
-        st.warning(f"**Reason:** {reason}")
+        st.markdown(
+            f'<div class="cab-blocked">{reason}</div>',
+            unsafe_allow_html=True,
+        )
 
+    # Injection fast path
     if state_data.get("injection_blocked"):
         st.error("⚡ **Injection Fast Path** — blocked before AI call")
 
+    # Latency
     latency = state_data.get("module_c_latency_ms")
     if latency is not None:
-        st.caption(f"Module C latency: {latency:.1f} ms")
+        st.markdown(
+            f'<span class="cab-latency">Module C latency: {latency:.1f} ms</span>',
+            unsafe_allow_html=True,
+        )
 
 
 # ---------------------------------------------------------------------------
 # render_event_log
 # ---------------------------------------------------------------------------
 
-def render_event_log(events: List[Dict], max_display: int = 10) -> None:
+def render_event_log(
+    events: List[Dict],
+    theme: Optional[Dict] = None,
+    max_display: int = 10,
+) -> None:
     """
     Scrollable list of recent risk events (newest first).
 
-    Each *event* dict should contain at least:
-        turn_number, user_message, risk_state, risk_score,
-        action, risk_tags, block_reason
+    Args:
+        events: List of event dicts (newest appended last).
+        theme: Theme dict from get_theme().
+        max_display: Max events to show.
     """
+    if theme is None:
+        theme = LIGHT_THEME
+
     if not events:
         st.caption("No events yet.")
         return
@@ -119,14 +112,31 @@ def render_event_log(events: List[Dict], max_display: int = 10) -> None:
     for ev in reversed(events[-max_display:]):
         state = ev.get("risk_state", "Safe")
         emoji = STATE_EMOJI.get(state, "⚪")
+        state_color = theme["state_colors"].get(state, "#666")
         msg = ev.get("user_message", "")
         preview = (msg[:50] + "…") if len(msg) > 50 else msg
         turn = ev.get("turn_number", "?")
 
         with st.expander(f"Turn {turn} {emoji} {state} — {preview}"):
-            st.write(f"**Score:** {ev.get('risk_score', 0):.2f}")
-            st.write(f"**Action:** {ev.get('action', 'pass')}")
-            st.write(f"**Tags:** {', '.join(ev.get('risk_tags', [])) or '—'}")
+            col_s, col_a = st.columns(2)
+            with col_s:
+                st.markdown(
+                    f'<span style="color:{state_color};font-weight:bold;">'
+                    f'Score: {ev.get("risk_score", 0):.2f}</span>',
+                    unsafe_allow_html=True,
+                )
+            with col_a:
+                st.write(f"**Action:** {ev.get('action', 'pass')}")
+
+            tags = ev.get("risk_tags", [])
+            if tags:
+                tag_html = " ".join(f'<span class="cab-tag">{t}</span>' for t in tags)
+                st.markdown(tag_html, unsafe_allow_html=True)
+
             if ev.get("block_reason"):
-                st.write(f"**Reason:** {ev['block_reason']}")
-            st.write(f"**Message:** {msg}")
+                st.markdown(
+                    f'<div class="cab-blocked">{ev["block_reason"]}</div>',
+                    unsafe_allow_html=True,
+                )
+
+            st.caption(f"Message: {msg}")
