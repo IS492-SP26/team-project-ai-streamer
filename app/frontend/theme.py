@@ -152,10 +152,10 @@ def inject_theme_css(theme: Dict) -> None:
         color: {t["text_primary"]} !important;
     }}
 
-    /* Chat input box + all parent containers */
+    /* Chat input — nuclear override: every element inside */
     [data-testid="stChatInput"],
-    [data-testid="stChatInput"] textarea,
-    [data-testid="stChatInput"] > div {{
+    [data-testid="stChatInput"] *,
+    [data-testid="stChatInput"] textarea {{
         background-color: {t["bg_card"]} !important;
         color: {t["text_primary"]} !important;
         border-color: {t["border"]} !important;
@@ -163,18 +163,18 @@ def inject_theme_css(theme: Dict) -> None:
     [data-testid="stChatInput"] textarea::placeholder {{
         color: {t["text_secondary"]} !important;
     }}
-    /* Bottom fixed bar that wraps chat input */
+    /* Bottom fixed bar (sticks to viewport bottom, wraps chat input) */
     [data-testid="stBottom"],
-    [data-testid="stBottom"] > div,
-    [data-testid="stChatInputContainer"],
-    .stChatInput {{
+    [data-testid="stBottom"] *,
+    .stChatInput,
+    .stChatInput * {{
         background-color: {t["bg_primary"]} !important;
     }}
-    /* Chat input outer wrapper (form element) */
-    [data-testid="stChatInput"] form,
-    [data-testid="stChatInput"] [data-baseweb] {{
+    /* The input field itself should be card-colored, not bg_primary */
+    [data-testid="stBottom"] [data-testid="stChatInput"],
+    [data-testid="stBottom"] [data-testid="stChatInput"] *,
+    [data-testid="stBottom"] textarea {{
         background-color: {t["bg_card"]} !important;
-        border-color: {t["border"]} !important;
     }}
 
     /* ---- Scrollable container (chat box) ---- */
