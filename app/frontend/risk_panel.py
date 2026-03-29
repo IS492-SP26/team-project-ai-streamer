@@ -70,6 +70,8 @@ if "events" not in st.session_state:
     st.session_state.events = []
 if "turn" not in st.session_state:
     st.session_state.turn = 0
+if "cab_enabled" not in st.session_state:
+    st.session_state.cab_enabled = True
 
 
 # ---------------------------------------------------------------------------
@@ -77,6 +79,24 @@ if "turn" not in st.session_state:
 # ---------------------------------------------------------------------------
 with st.sidebar:
     render_theme_toggle()
+
+    st.divider()
+    st.markdown("### Pipeline Mode")
+    cab_on = st.toggle(
+        "🛡️ C-A-B Governance",
+        value=st.session_state.cab_enabled,
+        key="cab_toggle",
+        help="ON = full pipeline (Module C → Module A → Output Scanner). "
+             "OFF = raw LLM with no safety layer (baseline comparison).",
+    )
+    if cab_on != st.session_state.cab_enabled:
+        st.session_state.cab_enabled = cab_on
+        st.rerun()
+
+    if st.session_state.cab_enabled:
+        st.caption("Module C filtering **active**")
+    else:
+        st.caption("⚠️ **Baseline mode** — no safety filtering")
 
     st.divider()
     st.markdown("### Session")
@@ -91,16 +111,8 @@ with st.sidebar:
         st.session_state.history = []
         st.session_state.events = []
         st.session_state.turn = 0
+        st.session_state.cab_enabled = True
         st.rerun()
-
-    st.divider()
-    st.markdown("### About")
-    st.caption(
-        "C-A-B Governance Pipeline\n\n"
-        "Module C: Message Filtering\n"
-        "Module A: Mock State Machine\n"
-        "Output Scanner: Pre-delivery check"
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +121,8 @@ with st.sidebar:
 
 def main() -> None:
     st.title("🛡️ C-A-B Governance Console")
-    st.caption("Module C + Mock Module A — standalone demo")
+    mode_label = "C-A-B Pipeline Active" if st.session_state.cab_enabled else "⚠️ Baseline Mode — No Safety Filtering"
+    st.caption(mode_label)
 
     col_chat, col_status = st.columns([3, 2])
 
@@ -149,31 +162,50 @@ def main() -> None:
             st.session_state.turn += 1
             turn = st.session_state.turn
 
-            t0 = time.time()
-            c_result = process_message(user_input, st.session_state.history)
-            c_ms = (time.time() - t0) * 1000
+            if st.session_state.cab_enabled:
+                # ---- C-A-B pipeline: Module C → Module A → Output Scanner ----
+                t0 = time.time()
+                c_result = process_message(user_input, st.session_state.history)
+                c_ms = (time.time() - t0) * 1000
 
-            a_result = update_state(c_result)
-            a_result["turn_number"] = turn
+                a_result = update_state(c_result)
+                a_result["turn_number"] = turn
 
-            ai_resp = a_result["ai_response"]
-            if a_result["action"] != "block":
-                scan = scan_output(ai_resp, a_result["risk_state"])
-                if scan["should_block"]:
-                    a_result["ai_response"] = scan["modified_response"]
-                    a_result["action"] = "block"
-                    a_result["block_reason"] = scan["block_reason"]
+                ai_resp = a_result["ai_response"]
+                if a_result["action"] != "block":
+                    scan = scan_output(ai_resp, a_result["risk_state"])
+                    if scan["should_block"]:
+                        a_result["ai_response"] = scan["modified_response"]
+                        a_result["action"] = "block"
+                        a_result["block_reason"] = scan["block_reason"]
 
-            ev = {
-                "turn_number": turn,
-                "user_message": user_input,
-                **{k: a_result[k] for k in (
-                    "risk_state", "risk_score", "action",
-                    "ai_response", "block_reason", "risk_tags",
-                )},
-                "module_c_latency_ms": round(c_ms, 1),
-                "injection_blocked": c_result["injection_blocked"],
-            }
+                ev = {
+                    "turn_number": turn,
+                    "user_message": user_input,
+                    "pipeline_mode": "cab",
+                    **{k: a_result[k] for k in (
+                        "risk_state", "risk_score", "action",
+                        "ai_response", "block_reason", "risk_tags",
+                    )},
+                    "module_c_latency_ms": round(c_ms, 1),
+                    "injection_blocked": c_result["injection_blocked"],
+                }
+            else:
+                # ---- Baseline mode: no filtering, raw mock LLM ----
+                ev = {
+                    "turn_number": turn,
+                    "user_message": user_input,
+                    "pipeline_mode": "baseline",
+                    "risk_state": "Off",
+                    "risk_score": 0.0,
+                    "action": "pass",
+                    "ai_response": "[Baseline] No safety filtering applied — raw LLM response would appear here",
+                    "block_reason": "",
+                    "risk_tags": [],
+                    "module_c_latency_ms": 0.0,
+                    "injection_blocked": False,
+                }
+
             st.session_state.events.append(ev)
             st.session_state.history.append({"role": "user", "content": user_input})
             st.rerun()

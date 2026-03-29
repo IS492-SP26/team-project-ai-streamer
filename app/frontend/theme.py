@@ -34,6 +34,7 @@ LIGHT_THEME: Dict = {
         "Suspicious": "#eab308",
         "Escalating": "#f97316",
         "Restricted": "#ef4444",
+        "Off": "#6b7280",
     },
     "state_text": "#ffffff",
     "tag_bg": "#f0f0f0",
@@ -58,6 +59,7 @@ DARK_THEME: Dict = {
         "Suspicious": "#d29922",
         "Escalating": "#e3743b",
         "Restricted": "#f85149",
+        "Off": "#484f58",
     },
     "state_text": "#ffffff",
     "tag_bg": "#21262d",
@@ -79,6 +81,7 @@ STATE_EMOJI = {
     "Suspicious": "🟡",
     "Escalating": "🟠",
     "Restricted": "🔴",
+    "Off": "⚪",
 }
 
 
@@ -149,15 +152,29 @@ def inject_theme_css(theme: Dict) -> None:
         color: {t["text_primary"]} !important;
     }}
 
-    /* Chat input box */
+    /* Chat input box + all parent containers */
     [data-testid="stChatInput"],
-    [data-testid="stChatInput"] textarea {{
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stChatInput"] > div {{
         background-color: {t["bg_card"]} !important;
         color: {t["text_primary"]} !important;
         border-color: {t["border"]} !important;
     }}
     [data-testid="stChatInput"] textarea::placeholder {{
         color: {t["text_secondary"]} !important;
+    }}
+    /* Bottom fixed bar that wraps chat input */
+    [data-testid="stBottom"],
+    [data-testid="stBottom"] > div,
+    [data-testid="stChatInputContainer"],
+    .stChatInput {{
+        background-color: {t["bg_primary"]} !important;
+    }}
+    /* Chat input outer wrapper (form element) */
+    [data-testid="stChatInput"] form,
+    [data-testid="stChatInput"] [data-baseweb] {{
+        background-color: {t["bg_card"]} !important;
+        border-color: {t["border"]} !important;
     }}
 
     /* ---- Scrollable container (chat box) ---- */
