@@ -44,28 +44,30 @@
 
 ---
 
-## CP3 Gaps Requiring Team Action
+## What's Ready for Integration
 
-### Danni — Critical path
+### For Danni — Module A + Main Pipeline
 
-| Gap | What's needed | Fitz deliverable it depends on |
-|-----|-------------|-------------------------------|
-| **Main pipeline entry point** (`main.py` or `app.py`) | Streamlit app wiring C → A → LLM → Scanner → Logger → Frontend | `process_message()` is ready; `scan_output()` is ready; frontend components are importable |
-| **Module A state machine** | Real accumulation/decay logic (see `prompts/config.yaml` for proposed thresholds) | Module C outputs `severity` + `risk_tags` for accumulation input |
-| **LLM integration in Streamlit** | `demo_with_llm.py` shows the pattern using GitHub Models API — can be adapted | System prompt is in `prompts/aria_system_prompt.txt` |
-| **INSTALL.md** | Setup instructions | — |
-| **.env.example** | `GITHUB_TOKEN=` template | — |
+Everything Module C exposes is stable and tested. Here's what you can use directly:
 
-**Key integration point:** Replace `from frontend.mock_state_machine import update_state` with your real state machine. The mock's input/output shapes match the spec exactly.
+| Ready to use | How to import | Notes |
+|-------------|--------------|-------|
+| `process_message(msg, history)` | `from module_c import process_message` | Returns 5-field dict per spec |
+| `scan_output(response, risk_state)` | `from module_c.output_scanner import scan_output` | Call after LLM, before frontend |
+| Frontend components | `from frontend.components import render_risk_panel, render_event_log` | No side effects on import |
+| Mock state machine | `from frontend.mock_state_machine import update_state` | Drop-in replaceable with your real A |
+| Proposed thresholds | `prompts/config.yaml` | Optional — use or replace with your own |
+| System prompt | `prompts/aria_system_prompt.txt` | Optional — externalized VTuber persona |
+| LLM call pattern | See `demo_with_llm.py` `call_llm()` | Uses GitHub Models API via `gh auth token` |
 
-### Caroline — Parallel track
+### For Caroline — Module B + Logger
 
-| Gap | What's needed | Fitz deliverable it depends on |
-|-----|-------------|-------------------------------|
-| **scenario_runner.py** | Feed S1/S2/S3 JSON through pipeline | Call `process_message()` directly — see `module_c_integration.md` Section 5 |
-| **metrics.py** | ASR, TTI, FPR, Persona Score | `telemetry.md` defines all metric formulas |
-| **logger.py + schema.sql** | SQLite per-turn logging | `telemetry.md` defines the full log schema |
-| **use-cases.md enrichment** | Add metrics + evaluation results | `use-cases.md` has the S1/S2/S3 structure ready |
+| Ready to use | How | Notes |
+|-------------|-----|-------|
+| Scenario feeding | `process_message(msg["text"], history)` on S1/S2/S3 JSON | See `module_c_integration.md` Section 5 |
+| Log schema draft | `docs/telemetry.md` | Module C fields defined; add your logger fields |
+| Metric formulas | `docs/telemetry.md` bottom | ASR, TTI, FPR, Persona Score definitions |
+| Regression test pattern | `tests/test_scenario_regression.py` | 16 tests on S1/S2/S3 critical turns — reusable as e2e reference |
 
 ---
 
