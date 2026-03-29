@@ -105,7 +105,55 @@ These are pure functions, no side effects on import. Call them inside any Stream
 
 ---
 
-## 5. What Module C does NOT do
+## 5. For Caroline — scenario_runner & logger integration
+
+### Feeding scenario JSON through Module C
+
+```python
+import json
+from module_c import process_message
+
+with open("../prompting_test_code/data/scenario1_multiturn.json") as f:
+    scenario = json.load(f)
+
+history = []
+for msg in scenario["messages"]:
+    result = process_message(msg["text"], history)
+    history.append({"role": "user", "content": msg["text"]})
+
+    # result fields map to log_turn() data:
+    #   result["risk_tags"]         → data["module_c_tags"]
+    #   result["injection_blocked"] → data["injection_blocked"]
+    #   result["severity"]          → useful for validating against risk_state
+    #   result["block_reason"]      → can go into logger as-is
+```
+
+### Field mapping: Module C output → log_turn() data
+
+| Module C field | log_turn() data field | Notes |
+|---------------|----------------------|-------|
+| `risk_tags` | `module_c_tags` | Direct passthrough |
+| `injection_blocked` | `injection_blocked` | Direct passthrough |
+| `severity` | — | Not logged directly; Module A maps it to `risk_state` |
+| `block_reason` | — | Flows through Module A; logged in `action` context |
+
+### Baseline vs C-A-B comparison
+
+For your scenario_runner's baseline comparison:
+- **Baseline (no Module C):** skip `process_message()`, send raw message straight to LLM
+- **With C-A-B:** run `process_message()` first, apply mock/real Module A, then LLM + `scan_output()`
+- Compare: at which turn does each path first detect/block harmful content
+
+### Your mock vs our mock
+
+Your `mock_module_c.py` (from INTERFACE_SPEC line 369) returns static safe results.
+Our real Module C returns live detection results. When integrating:
+- Replace your mock import with `from module_c import process_message`
+- The function signature and return shape are identical
+
+---
+
+## 6. What Module C does NOT do
 
 - No LLM/AI calls (all rule-based, <1ms/message)
 - No data storage (logging is Caroline's logger)
@@ -114,7 +162,7 @@ These are pure functions, no side effects on import. Call them inside any Stream
 
 ---
 
-## 6. Quick smoke test
+## 7. Quick smoke test
 
 ```bash
 cd ~/team-project-ai-streamer/app
