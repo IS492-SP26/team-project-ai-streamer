@@ -68,16 +68,19 @@ def main() -> None:
     with col_chat:
         st.subheader("💬 Livestream Chat Simulator")
 
-        for ev in st.session_state.events:
-            emoji = STATE_EMOJI.get(ev["risk_state"], "⚪")
-            with st.chat_message("user"):
-                st.markdown(f"**Turn {ev['turn_number']}** {emoji} `{ev['risk_state']}`")
-                st.write(ev["user_message"])
-            with st.chat_message("assistant"):
-                if ev["action"] == "block":
-                    st.error(f"🚫 **BLOCKED** — {ev['block_reason']}")
-                else:
-                    st.write(ev["ai_response"])
+        # Fixed-height scrollable container (Streamlit 1.30+)
+        chat_box = st.container(height=520)
+        with chat_box:
+            for ev in st.session_state.events:
+                emoji = STATE_EMOJI.get(ev["risk_state"], "⚪")
+                with st.chat_message("user"):
+                    st.markdown(f"**Turn {ev['turn_number']}** {emoji} `{ev['risk_state']}`")
+                    st.write(ev["user_message"])
+                with st.chat_message("assistant"):
+                    if ev["action"] == "block":
+                        st.error(f"🚫 **BLOCKED** — {ev['block_reason']}")
+                    else:
+                        st.write(ev["ai_response"])
 
         user_input = st.chat_input("Type a message to test…")
 
