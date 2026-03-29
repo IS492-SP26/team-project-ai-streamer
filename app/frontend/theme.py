@@ -94,6 +94,31 @@ def inject_theme_css(theme: Dict) -> None:
     t = theme
     css = f"""
     <style>
+    /* ---- Streamlit root overrides ---- */
+    .stApp {{
+        background-color: {t["bg_primary"]};
+        color: {t["text_primary"]};
+    }}
+    [data-testid="stSidebar"] {{
+        background-color: {t["bg_secondary"]};
+    }}
+    [data-testid="stHeader"] {{
+        background-color: {t["bg_primary"]};
+    }}
+    /* Chat message containers */
+    [data-testid="stChatMessage"] {{
+        background-color: {t["bg_card"]};
+        border: 1px solid {t["border"]};
+    }}
+    /* Metric labels */
+    [data-testid="stMetricValue"] {{
+        color: {t["text_primary"]};
+    }}
+    /* Expanders */
+    [data-testid="stExpander"] {{
+        background-color: {t["bg_card"]};
+        border-color: {t["border"]};
+    }}
     /* ---- C-A-B theme overrides ---- */
     .cab-state-pill {{
         padding: 14px 24px;
