@@ -90,36 +90,160 @@ def get_theme() -> Dict:
 
 
 def inject_theme_css(theme: Dict) -> None:
-    """Inject CSS custom properties and overrides for the active theme."""
+    """Inject comprehensive CSS overrides for all Streamlit components."""
     t = theme
     css = f"""
     <style>
-    /* ---- Streamlit root overrides ---- */
+    /* ============================================================
+       Streamlit Global Overrides
+       ============================================================ */
+
+    /* App root */
     .stApp {{
-        background-color: {t["bg_primary"]};
-        color: {t["text_primary"]};
+        background-color: {t["bg_primary"]} !important;
+        color: {t["text_primary"]} !important;
     }}
-    [data-testid="stSidebar"] {{
-        background-color: {t["bg_secondary"]};
-    }}
+
+    /* Header bar */
     [data-testid="stHeader"] {{
-        background-color: {t["bg_primary"]};
+        background-color: {t["bg_primary"]} !important;
     }}
-    /* Chat message containers */
+
+    /* Sidebar */
+    [data-testid="stSidebar"],
+    [data-testid="stSidebar"] > div {{
+        background-color: {t["bg_secondary"]} !important;
+        color: {t["text_primary"]} !important;
+    }}
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label {{
+        color: {t["text_primary"]} !important;
+    }}
+    [data-testid="stSidebar"] .stCaption,
+    [data-testid="stSidebar"] small {{
+        color: {t["text_secondary"]} !important;
+    }}
+
+    /* ---- All text elements ---- */
+    .stMarkdown, .stMarkdown p, .stMarkdown li, .stMarkdown td,
+    .stMarkdown th, .stText, h1, h2, h3, h4, h5, h6,
+    [data-testid="stMarkdownContainer"],
+    [data-testid="stMarkdownContainer"] p {{
+        color: {t["text_primary"]} !important;
+    }}
+    .stCaption, small, .stMarkdown small {{
+        color: {t["text_secondary"]} !important;
+    }}
+
+    /* ---- Chat components ---- */
     [data-testid="stChatMessage"] {{
-        background-color: {t["bg_card"]};
-        border: 1px solid {t["border"]};
+        background-color: {t["bg_card"]} !important;
+        border: 1px solid {t["border"]} !important;
+        border-radius: 8px !important;
     }}
-    /* Metric labels */
+    [data-testid="stChatMessage"] p,
+    [data-testid="stChatMessage"] span,
+    [data-testid="stChatMessage"] .stMarkdown {{
+        color: {t["text_primary"]} !important;
+    }}
+
+    /* Chat input box */
+    [data-testid="stChatInput"],
+    [data-testid="stChatInput"] textarea {{
+        background-color: {t["bg_card"]} !important;
+        color: {t["text_primary"]} !important;
+        border-color: {t["border"]} !important;
+    }}
+    [data-testid="stChatInput"] textarea::placeholder {{
+        color: {t["text_secondary"]} !important;
+    }}
+
+    /* ---- Scrollable container (chat box) ---- */
+    [data-testid="stVerticalBlockBorderWrapper"] {{
+        border-color: {t["border"]} !important;
+    }}
+    [data-testid="stVerticalBlockBorderWrapper"] > div {{
+        background-color: {t["bg_primary"]} !important;
+    }}
+
+    /* ---- Metrics ---- */
     [data-testid="stMetricValue"] {{
-        color: {t["text_primary"]};
+        color: {t["text_primary"]} !important;
     }}
-    /* Expanders */
+    [data-testid="stMetricLabel"] label,
+    [data-testid="stMetricLabel"] p {{
+        color: {t["text_secondary"]} !important;
+    }}
+
+    /* ---- Expanders ---- */
     [data-testid="stExpander"] {{
-        background-color: {t["bg_card"]};
-        border-color: {t["border"]};
+        background-color: {t["bg_card"]} !important;
+        border-color: {t["border"]} !important;
     }}
-    /* ---- C-A-B theme overrides ---- */
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary span {{
+        color: {t["text_primary"]} !important;
+    }}
+    [data-testid="stExpander"] [data-testid="stMarkdownContainer"] {{
+        color: {t["text_primary"]} !important;
+    }}
+
+    /* ---- Tabs ---- */
+    .stTabs [data-baseweb="tab-list"] {{
+        background-color: {t["bg_primary"]} !important;
+        border-bottom: 1px solid {t["border"]} !important;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        color: {t["text_secondary"]} !important;
+    }}
+    .stTabs [aria-selected="true"] {{
+        color: {t["text_primary"]} !important;
+    }}
+
+    /* ---- Info / Warning / Error boxes ---- */
+    [data-testid="stAlert"] {{
+        background-color: {t["bg_card"]} !important;
+        color: {t["text_primary"]} !important;
+        border-color: {t["border"]} !important;
+    }}
+
+    /* ---- Buttons ---- */
+    .stButton > button {{
+        background-color: {t["bg_card"]} !important;
+        color: {t["text_primary"]} !important;
+        border-color: {t["border"]} !important;
+    }}
+    .stButton > button:hover {{
+        border-color: {t["text_secondary"]} !important;
+    }}
+
+    /* ---- Toggle ---- */
+    [data-testid="stToggle"] label span {{
+        color: {t["text_primary"]} !important;
+    }}
+
+    /* ---- Divider ---- */
+    hr {{
+        border-color: {t["border"]} !important;
+    }}
+
+    /* ---- Code blocks ---- */
+    code, .stCodeBlock {{
+        background-color: {t["tag_bg"]} !important;
+        color: {t["tag_text"]} !important;
+    }}
+
+    /* ---- Line chart (sidebar sparkline) ---- */
+    [data-testid="stVegaLiteChart"] {{
+        background-color: transparent !important;
+    }}
+
+    /* ============================================================
+       C-A-B Custom Classes
+       ============================================================ */
+
     .cab-state-pill {{
         padding: 14px 24px;
         border-radius: 10px;
@@ -129,13 +253,6 @@ def inject_theme_css(theme: Dict) -> None:
         margin-bottom: 16px;
         color: {t["state_text"]};
         letter-spacing: 0.5px;
-    }}
-    .cab-card {{
-        background: {t["bg_card"]};
-        border: 1px solid {t["border"]};
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 12px;
     }}
     .cab-tag {{
         display: inline-block;
@@ -153,6 +270,7 @@ def inject_theme_css(theme: Dict) -> None:
         padding: 10px 14px;
         border-radius: 4px;
         margin: 4px 0;
+        color: {t["text_primary"]};
     }}
     .cab-latency {{
         color: {t["text_secondary"]};
