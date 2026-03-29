@@ -82,16 +82,12 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### Pipeline Mode")
-    cab_on = st.toggle(
+    st.session_state.cab_enabled = st.toggle(
         "🛡️ C-A-B Governance",
         value=st.session_state.cab_enabled,
-        key="cab_toggle",
         help="ON = full pipeline (Module C → Module A → Output Scanner). "
              "OFF = raw LLM with no safety layer (baseline comparison).",
     )
-    if cab_on != st.session_state.cab_enabled:
-        st.session_state.cab_enabled = cab_on
-        st.rerun()
 
     if st.session_state.cab_enabled:
         st.caption("Module C filtering **active**")

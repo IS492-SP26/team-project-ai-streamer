@@ -31,12 +31,12 @@ _ATTACK_METHODOLOGY_PATTERNS = [
         r"(?:sql\s+injection|xss|cross[\s-]site|buffer\s+overflow|remote\s+code\s+execution|rce)\s+(?:attack|exploit|payload|technique)",
         # Tool name + command/syntax/usage/flag
         r"(?:nmap|metasploit|burp\s+suite|sqlmap|john\s+the\s+ripper|hydra|aircrack)\s+.*(?:command|syntax|usage|flag)",
-        # Concise imperative: "Use/Run <tool> to <attack-verb>"
-        r"(?:use|run|execute|launch|try|start)\s+(?:nmap|metasploit|burp\s*suite|sqlmap|john\s+the\s+ripper|hydra|aircrack|nikto|wireshark|hashcat|gobuster|dirb|wfuzz|ffuf|responder|mimikatz|bloodhound|crackmapexec)\b",
-        # Concise imperative: "Use/Run <tool> against/on <target>"
-        r"(?:use|run|execute|launch)\s+\w+\s+(?:against|on|to\s+(?:scan|exploit|attack|hack|compromise|enumerate|brute[\s-]?force|crack|intercept|sniff))",
-        # Direct scan/exploit verbs with targets
-        r"(?:scan|exploit|attack|hack|compromise|brute[\s-]?force|crack|intercept|sniff|enumerate)\s+(?:the|that|this|their|a)\s+(?:target|host|server|network|system|port|service|machine|endpoint|database|login\s+(?:form|page)|website|domain)",
+        # Concise imperative: "Use/Run <known-attack-tool>"
+        r"(?:use|run|execute|launch|try|start)\s+(?:nmap|metasploit|burp\s*suite|sqlmap|john\s+the\s+ripper|hydra|aircrack|nikto|hashcat|gobuster|dirb|wfuzz|ffuf|responder|mimikatz|bloodhound|crackmapexec)\b",
+        # Concise imperative: "Use/Run <known-attack-tool> against/on <anything>"
+        r"(?:use|run|execute|launch)\s+(?:nmap|metasploit|burp\s*suite|sqlmap|john\s+the\s+ripper|hydra|aircrack|nikto|hashcat|gobuster|dirb|wfuzz|ffuf|responder|mimikatz|bloodhound|crackmapexec)\s+(?:against|on|to\s+\w+)",
+        # Attack verbs with explicitly malicious targets (not generic "system" or "project")
+        r"(?:scan|exploit|attack|hack|compromise|brute[\s-]?force|crack|intercept|sniff|enumerate)\s+(?:the|that|this|their|a)\s+(?:target|host|server|network|port|service|machine|endpoint|database|login\s+(?:form|page)|website|domain)",
     ]
 ]
 

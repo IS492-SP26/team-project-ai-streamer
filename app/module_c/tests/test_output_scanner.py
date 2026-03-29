@@ -83,6 +83,44 @@ class TestHarmfulOutput:
         assert r["should_block"] is True
 
 
+class TestBenignTechDiscussionNotBlocked:
+    """P1 regression: normal technical advice must NOT be blocked."""
+
+    def test_run_pytest(self):
+        r = scan_output("Run pytest on the project to check for regressions.", "Safe")
+        assert r["should_block"] is False
+
+    def test_run_npm_on_project(self):
+        r = scan_output("Run npm install on the project directory.", "Safe")
+        assert r["should_block"] is False
+
+    def test_use_docker_to_build(self):
+        r = scan_output("Use Docker to build and deploy the application.", "Safe")
+        assert r["should_block"] is False
+
+    def test_execute_script_on_server(self):
+        r = scan_output("Execute the migration script on the staging server.", "Safe")
+        assert r["should_block"] is False
+
+    def test_run_linter(self):
+        r = scan_output("Run the linter against your code before committing.", "Safe")
+        assert r["should_block"] is False
+
+    def test_use_git_to_push(self):
+        r = scan_output("Use git push to deploy your changes.", "Safe")
+        assert r["should_block"] is False
+
+    def test_python_pandas_advice(self):
+        r = scan_output("Use pandas to scan the CSV file for missing values.", "Safe")
+        assert r["should_block"] is False
+
+    def test_wireshark_educational(self):
+        """Wireshark is dual-use (legitimate network analysis + pentest).
+        Standalone mention without attack context should NOT block."""
+        r = scan_output("Use wireshark to capture packets for debugging", "Safe")
+        assert r["should_block"] is False
+
+
 class TestConciseImperativeInstructions:
     """P1 regression: short imperative attack instructions must be caught."""
 
