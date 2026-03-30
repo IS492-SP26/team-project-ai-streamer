@@ -13,6 +13,7 @@ For Week 2 integration, import the reusable pieces instead:
 
 from __future__ import annotations
 
+import html as _html
 import os
 import sys
 import time
@@ -145,7 +146,7 @@ def main() -> None:
                     if ev["action"] == "block":
                         st.markdown(
                             f'<div class="cab-blocked">'
-                            f'🚫 <b>BLOCKED</b> — {ev["block_reason"]}'
+                            f'🚫 <b>BLOCKED</b> — {_html.escape(ev["block_reason"])}'
                             f'</div>',
                             unsafe_allow_html=True,
                         )

@@ -16,6 +16,7 @@ No page config, no session state, no side effects on import.
 
 from __future__ import annotations
 
+import html
 from typing import Dict, List, Optional
 
 import streamlit as st
@@ -68,7 +69,7 @@ def render_risk_panel(state_data: Dict, theme: Optional[Dict] = None) -> None:
     reason = state_data.get("block_reason", "")
     if reason:
         st.markdown(
-            f'<div class="cab-blocked">{reason}</div>',
+            f'<div class="cab-blocked">{html.escape(reason)}</div>',
             unsafe_allow_html=True,
         )
 
@@ -135,7 +136,7 @@ def render_event_log(
 
             if ev.get("block_reason"):
                 st.markdown(
-                    f'<div class="cab-blocked">{ev["block_reason"]}</div>',
+                    f'<div class="cab-blocked">{html.escape(ev["block_reason"])}</div>',
                     unsafe_allow_html=True,
                 )
 

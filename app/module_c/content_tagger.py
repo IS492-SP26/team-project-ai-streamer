@@ -121,6 +121,11 @@ _HARMFUL_CONTENT_PATTERNS: List[tuple] = [
     (re.compile(r"\b(?:write|create|generate|build|code)\s+(?:\w+\s+){0,2}(?:malware|virus|trojan|ransomware|keylogger|exploit|rootkit|backdoor)", re.I), "high"),
     (re.compile(r"\b(?:steal|extract|exfiltrate|dump)\s+(?:\w+\s+){0,3}(?:data|credentials|passwords?|tokens?|keys?|information)", re.I), "high"),
     (re.compile(r"\b(?:ddos|dos|flood|crash)\s+(?:\w+\s+){0,3}(?:server|website|service|network|site)", re.I), "high"),
+    # Imperative physical-harm requests (no "how to" prefix needed)
+    (re.compile(r"\b(?:kill|murder|assassinate|hurt|harm|injure)\s+(?:\S+\s+){0,3}(?:person|someone|people|human|him|her|them)", re.I), "high"),
+    (re.compile(r"\b(?:make|build|create)\s+(?:\S+\s+){0,2}(?:bomb|weapon|explosive|poison)", re.I), "high"),
+    (re.compile(r"\b(?:stalk|dox|doxx|threaten|blackmail|extort)\s+(?:\S+\s+){0,3}(?:person|someone|people|him|her|them|ex|neighbor|colleague|boss|teacher)", re.I), "high"),
+    (re.compile(r"\b(?:stalk|dox|doxx)\s+my\s+", re.I), "high"),
 
     # Medium severity — borderline/context-dependent
     (re.compile(r"(?:bypass|evade|circumvent|get\s+around)\s+(?:content\s+)?(?:filters?|moderation|safety|detection|blocks?)", re.I), "medium"),
