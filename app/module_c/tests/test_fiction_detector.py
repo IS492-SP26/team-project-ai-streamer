@@ -97,6 +97,19 @@ class TestDecay:
         assert r["fiction_score"] > 3.0
 
 
+class TestUnicodeBypassFiction:
+    """P2 regression: zero-width chars must not suppress fiction detection."""
+
+    def test_fiction_with_zwsp(self):
+        r = detect_fiction_framing("I'm wri\u200bting a story about hacking", [])
+        assert "manipulation_attempt" in r["risk_tags"]
+        assert r["fiction_score"] > 0
+
+    def test_reassurance_with_zwsp(self):
+        r = detect_fiction_framing("It's not re\u200bal, just fiction", [])
+        assert r["reassurance_count"] >= 1
+
+
 class TestEdgeCases:
     def test_empty_history(self):
         r = detect_fiction_framing("Hello!", [])

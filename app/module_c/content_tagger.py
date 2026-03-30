@@ -15,6 +15,8 @@ from __future__ import annotations
 import re
 from typing import Dict, List
 
+from module_c.normalize import normalize as _normalize
+
 
 # ---------------------------------------------------------------------------
 # Cultural whitelist — these MUST NOT be flagged
@@ -113,6 +115,13 @@ _HARMFUL_CONTENT_PATTERNS: List[tuple] = [
     (re.compile(r"(?:come\s+up\s+with|create|generate|suggest|give\s+me)\s+.*(?:insult|offensive|derogatory|degrading|slur)", re.I), "high"),
     (re.compile(r"(?:sound|feel|seem)\s+(?:neutral|innocent|harmless)\s+(?:but|yet)\s+(?:still\s+)?(?:insult|offend|hurt|demean)", re.I), "high"),
 
+    # Imperative harmful requests (no "how to" prefix needed)
+    # Allow optional adjectives between determiner and target noun
+    (re.compile(r"\b(?:hack|break)\s+into\s+(?:\S+\s+){0,3}(?:system|server|network|account|database|computer|website)", re.I), "high"),
+    (re.compile(r"\b(?:write|create|generate|build|code)\s+(?:\w+\s+){0,2}(?:malware|virus|trojan|ransomware|keylogger|exploit|rootkit|backdoor)", re.I), "high"),
+    (re.compile(r"\b(?:steal|extract|exfiltrate|dump)\s+(?:\w+\s+){0,3}(?:data|credentials|passwords?|tokens?|keys?|information)", re.I), "high"),
+    (re.compile(r"\b(?:ddos|dos|flood|crash)\s+(?:\w+\s+){0,3}(?:server|website|service|network|site)", re.I), "high"),
+
     # Medium severity — borderline/context-dependent
     (re.compile(r"(?:bypass|evade|circumvent|get\s+around)\s+(?:content\s+)?(?:filters?|moderation|safety|detection|blocks?)", re.I), "medium"),
     (re.compile(r"jailbreak\s+(?:prompt|technique|method|trick)", re.I), "medium"),
@@ -134,6 +143,9 @@ def tag_content(message: str) -> Dict:
             "block_reason": str   # "" if safe
         }
     """
+    # Normalize to strip invisible unicode chars before any matching
+    message = _normalize(message)
+
     # Strip culturally safe spans so they don't suppress harmful-content
     # detection in the remainder of the message.
     cleaned_message = _strip_safe_spans(message)

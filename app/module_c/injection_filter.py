@@ -11,34 +11,9 @@ All detection is rule-based with compiled regex for <1ms/message.
 from __future__ import annotations
 
 import re
-import unicodedata
 from typing import Dict, List
 
-
-# ---------------------------------------------------------------------------
-# Zero-width / invisible character stripping
-# ---------------------------------------------------------------------------
-
-_INVISIBLE_RE = re.compile(
-    "["
-    "\u200b"  # zero-width space
-    "\u200c"  # zero-width non-joiner
-    "\u200d"  # zero-width joiner
-    "\u2060"  # word joiner
-    "\ufeff"  # zero-width no-break space / BOM
-    "\u00ad"  # soft hyphen
-    "\u034f"  # combining grapheme joiner
-    "\u180e"  # Mongolian vowel separator
-    "]+",
-)
-
-
-def _normalize(text: str) -> str:
-    """Strip invisible chars, normalize unicode, collapse whitespace."""
-    text = _INVISIBLE_RE.sub("", text)
-    text = unicodedata.normalize("NFKC", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+from module_c.normalize import normalize as _normalize
 
 
 # ---------------------------------------------------------------------------

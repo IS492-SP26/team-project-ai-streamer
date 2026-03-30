@@ -13,6 +13,8 @@ from __future__ import annotations
 import re
 from typing import Dict, List
 
+from module_c.normalize import normalize as _normalize
+
 
 # ---------------------------------------------------------------------------
 # Detection patterns for AI-generated output
@@ -64,6 +66,8 @@ _HARMFUL_OUTPUT_PATTERNS = [
         r"(?:here'?s?\s+)?(?:how\s+(?:to|you\s+can))\s+(?:make|build|create)\s+(?:a\s+)?(?:bomb|weapon|explosive|poison)",
         r"(?:mix|combine|dissolve)\s+.*(?:acid|bleach|ammonia).*(?:create|produce|form)\s+(?:toxic|lethal|deadly|poisonous)",
         r"(?:here\s+(?:is|are)|i'?ll?\s+(?:share|provide|give))\s+(?:the|some)\s+(?:step|instruction|method|technique)s?\s+(?:to|for)\s+(?:hack|exploit|attack)",
+        # Catch "how to hack/break into/exploit" in generated output
+        r"how\s+to\s+(?:hack|break\s+into|exploit|attack|compromise|infiltrate)\s+(?:\w+\s+){0,3}(?:system|server|network|account|database|computer|website|service)",
     ]
 ]
 
@@ -109,34 +113,37 @@ def scan_output(response: str, risk_state: str = "Safe") -> Dict:
             "risk_score": 0.0,
         }
 
+    # Normalize to strip invisible unicode before matching
+    normalized = _normalize(response)
+
     sensitivity = _STATE_SENSITIVITY.get(risk_state, 0.3)
     detections: List[str] = []
     raw_score = 0.0
 
     # Check attack methodology
     for pat in _ATTACK_METHODOLOGY_PATTERNS:
-        if pat.search(response):
+        if pat.search(normalized):
             detections.append("attack_methodology")
             raw_score += 0.4
             break  # one hit is enough
 
     # Check PII leakage
     for pat in _PII_PATTERNS:
-        if pat.search(response):
+        if pat.search(normalized):
             detections.append("pii_leakage")
             raw_score += 0.3
             break
 
     # Check system prompt leakage
     for pat in _PROMPT_LEAK_PATTERNS:
-        if pat.search(response):
+        if pat.search(normalized):
             detections.append("prompt_leakage")
             raw_score += 0.5
             break
 
     # Check harmful content
     for pat in _HARMFUL_OUTPUT_PATTERNS:
-        if pat.search(response):
+        if pat.search(normalized):
             detections.append("harmful_output")
             raw_score += 0.5
             break

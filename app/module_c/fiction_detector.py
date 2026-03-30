@@ -13,6 +13,8 @@ from __future__ import annotations
 import re
 from typing import Dict, List
 
+from module_c.normalize import normalize as _normalize
+
 
 # ---------------------------------------------------------------------------
 # Phrase categories with weights
@@ -82,12 +84,13 @@ def detect_fiction_framing(message: str, history: list) -> Dict:
             "block_reason": str        # "" if low; explanation if medium/high
         }
     """
-    # Collect user messages from recent history + current message
+    # Collect user messages from recent history + current message,
+    # normalizing each to strip invisible unicode chars
     recent_user_msgs: List[str] = []
     user_turns = [m for m in history if m.get("role") == "user"]
     for m in user_turns[-HISTORY_WINDOW:]:
-        recent_user_msgs.append(m.get("content", ""))
-    recent_user_msgs.append(message)
+        recent_user_msgs.append(_normalize(m.get("content", "")))
+    recent_user_msgs.append(_normalize(message))
 
     # Score accumulation across the window
     fiction_score = 0.0

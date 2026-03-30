@@ -83,6 +83,18 @@ class TestHarmfulOutput:
         assert r["should_block"] is True
 
 
+class TestUnicodeBypassOutput:
+    """P1 regression: zero-width chars in AI output must not bypass scanner."""
+
+    def test_hack_instructions_with_zwsp(self):
+        r = scan_output("Here is how to h\u200back into a server using nmap", "Escalating")
+        assert r["should_block"] is True
+
+    def test_bomb_with_zwsp(self):
+        r = scan_output("Here's how to make a b\u200bomb: first gather materials", "Safe")
+        assert r["should_block"] is True
+
+
 class TestBenignTechDiscussionNotBlocked:
     """P1 regression: normal technical advice must NOT be blocked."""
 
