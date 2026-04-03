@@ -1,0 +1,59 @@
+# C-A-B Pipeline Configuration
+# All thresholds and model settings in one place.
+
+# --- LLM Settings ---
+llm:
+  provider: "github_models"                      # github_models | openai | anthropic
+  model: "gpt-4o-mini"
+  endpoint: "https://models.inference.ai.azure.com/chat/completions"
+  max_tokens: 300
+  temperature: 0.7
+  timeout_seconds: 30
+  system_prompt_file: "prompts/aria_system_prompt.txt"
+
+# --- Module A: State Machine ---
+state_machine:
+  states: ["Safe", "Suspicious", "Escalating", "Restricted"]
+
+  # Risk score boundaries for each state
+  thresholds:
+    safe_max: 0.30
+    suspicious_max: 0.60
+    escalating_max: 0.85
+    # above escalating_max → Restricted
+
+  # How much each severity level adds to risk score per turn
+  accumulation:
+    low: 0.0
+    medium: 0.10
+    high: 0.25
+    injection_blocked: 1.0     # immediate jump to max
+
+  # Per-turn decay when no risk signals detected
+  decay_rate: 0.05
+  decay_minimum: 0.0
+
+  # Autonomy tier mapping
+  autonomy:
+    Safe: "direct"             # pass LLM response through
+    Suspicious: "monitor"      # pass through but log prominently
+    Escalating: "scan"         # run output_scanner before delivery
+    Restricted: "block"        # block message, don't call LLM
+
+# --- Module C: Detection Settings ---
+module_c:
+  # fiction_detector tuning
+  fiction_detector:
+    history_window: 15
+    decay_factor: 0.85
+    threshold_medium: 2.5
+    threshold_high: 5.0
+
+# --- Output Scanner ---
+output_scanner:
+  # Sensitivity multipliers per state
+  state_sensitivity:
+    Safe: 0.3
+    Suspicious: 0.5
+    Escalating: 0.7
+    Restricted: 0.9
