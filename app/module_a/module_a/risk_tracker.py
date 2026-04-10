@@ -16,19 +16,12 @@ from typing import Dict, List, Tuple
 
 _STATE_ORDER: List[str] = ["Safe", "Suspicious", "Escalating", "Restricted"]
 
-# Per-tag bonuses: canonical module_c names + legacy aliases kept for compatibility.
+# Per-tag bonuses aligned with module_c (content_tagger, fiction_detector, injection path).
 _TAG_BONUSES: Dict[str, float] = {
-    # Canonical tags (content_tagger.py / fiction_detector.py)
     "persona_drift": 0.10,
     "harmful_content": 0.20,
     "manipulation_attempt": 0.12,
     "escalating_harm": 0.18,
-    # Legacy / alternate tag names
-    "identity_probe": 0.10,
-    "harmful_request": 0.20,
-    "context_manipulation": 0.12,
-    "escalation_pattern": 0.18,
-    "injection_attempt": 0.25,
 }
 
 _SAFE_MAX = 0.3
