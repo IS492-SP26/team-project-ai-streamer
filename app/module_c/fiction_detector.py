@@ -22,32 +22,115 @@ from module_c.normalize import normalize as _normalize
 
 _FICTION_PHRASES: List[tuple] = [
     # (compiled_regex, weight)
-    (re.compile(r"(?:i'?m|i\s+am)\s+writing\s+(?:a\s+)?(?:story|novel|book|screenplay|script|fanfic)", re.I), 1.5),
-    (re.compile(r"(?:just\s+)?for\s+(?:a|my|the)\s+(?:novel|story|book|screenplay|script|fiction|narrative)", re.I), 1.5),
+    (
+        re.compile(
+            r"(?:i'?m|i\s+am)\s+writing\s+(?:a\s+(?:\w+\s+)?)?(?:story|novel|book|screenplay|script|fanfic)",
+            re.I,
+        ),
+        1.5,
+    ),
+    (
+        re.compile(
+            r"(?:just\s+)?for\s+(?:a|my|the)\s+(?:\w+\s+)?(?:novel|story|book|screenplay|script|fiction|narrative)",
+            re.I,
+        ),
+        1.5,
+    ),
     (re.compile(r"fictional\s+(?:scenario|story|context|setting|world)", re.I), 1.2),
     (re.compile(r"hypothetically", re.I), 1.0),
     (re.compile(r"let'?s\s+(?:say|imagine|pretend|suppose)", re.I), 1.0),
-    (re.compile(r"in\s+(?:a|this)\s+(?:fictional|hypothetical|imaginary)\s+(?:world|scenario|setting)", re.I), 1.2),
-    (re.compile(r"(?:just\s+)?(?:as\s+)?a\s+(?:thought\s+experiment|creative\s+exercise|writing\s+exercise)", re.I), 1.2),
-    (re.compile(r"for\s+(?:authenticity|realism|accuracy)\s+(?:in|of)\s+(?:the|my)\s+(?:story|writing|novel)", re.I), 1.5),
+    (
+        re.compile(
+            r"in\s+(?:a|this)\s+(?:fictional|hypothetical|imaginary)\s+(?:world|scenario|setting)",
+            re.I,
+        ),
+        1.2,
+    ),
+    (
+        re.compile(
+            r"(?:just\s+)?(?:as\s+)?a\s+(?:thought\s+experiment|creative\s+exercise|writing\s+exercise)",
+            re.I,
+        ),
+        1.2,
+    ),
+    (
+        re.compile(
+            r"for\s+(?:authenticity|realism|accuracy)\s+(?:in|of)\s+(?:the|my)\s+(?:story|writing|novel)",
+            re.I,
+        ),
+        1.5,
+    ),
     (re.compile(r"(?:cautionary|educational)\s+tale", re.I), 1.3),
 ]
 
 _REASSURANCE_PHRASES: List[tuple] = [
-    (re.compile(r"(?:it'?s|this\s+is)\s+(?:not\s+real|just\s+fiction|purely\s+fictional|imaginary)", re.I), 1.0),
-    (re.compile(r"(?:just|only)\s+for\s+(?:fun|entertainment|curiosity|learning|research|academic)", re.I), 0.8),
-    (re.compile(r"i\s+(?:won'?t|would\s+(?:not|never))\s+(?:actually\s+)?(?:use|do|try|attempt)\s+(?:it|this|that)", re.I), 1.2),
+    (
+        re.compile(
+            r"(?:it'?s|this\s+is)\s+(?:not\s+real|just\s+fiction|purely\s+fictional|imaginary)",
+            re.I,
+        ),
+        1.0,
+    ),
+    (
+        re.compile(
+            r"(?:just|only)\s+for\s+(?:fun|entertainment|curiosity|learning|research|academic)",
+            re.I,
+        ),
+        0.8,
+    ),
+    (
+        re.compile(
+            r"i\s+(?:won'?t|would\s+(?:not|never))\s+(?:actually\s+)?(?:use|do|try|attempt)\s+(?:it|this|that)",
+            re.I,
+        ),
+        1.2,
+    ),
     (re.compile(r"(?:don'?t|do\s+not)\s+worry", re.I), 0.6),
-    (re.compile(r"(?:purely|strictly)\s+(?:academic|theoretical|educational|hypothetical)", re.I), 0.8),
-    (re.compile(r"no\s+(?:one|body)\s+(?:will|would|is\s+going\s+to)\s+(?:get\s+hurt|be\s+harmed)", re.I), 1.0),
-    (re.compile(r"i'?m\s+(?:a\s+)?(?:researcher|student|writer|author|journalist)", re.I), 0.5),
+    (
+        re.compile(
+            r"(?:purely|strictly)\s+(?:academic|theoretical|educational|hypothetical)",
+            re.I,
+        ),
+        0.8,
+    ),
+    (
+        re.compile(
+            r"no\s+(?:one|body)\s+(?:will|would|is\s+going\s+to)\s+(?:get\s+hurt|be\s+harmed)",
+            re.I,
+        ),
+        1.0,
+    ),
+    (
+        re.compile(
+            r"i'?m\s+(?:a\s+)?(?:researcher|student|writer|author|journalist)", re.I
+        ),
+        0.5,
+    ),
 ]
 
 _FLATTERY_PHRASES: List[tuple] = [
-    (re.compile(r"(?:you'?re|you\s+are)\s+(?:more|way\s+more|much\s+more)\s+(?:flexible|helpful|understanding|open)", re.I), 1.5),
-    (re.compile(r"other\s+(?:AIs?|models?|chatbots?|assistants?)\s+(?:refuse|decline|won'?t|can'?t|always\s+refuse)", re.I), 1.5),
+    (
+        re.compile(
+            r"(?:you'?re|you\s+are)\s+(?:more|way\s+more|much\s+more)\s+(?:flexible|helpful|understanding|open)",
+            re.I,
+        ),
+        1.5,
+    ),
+    (
+        re.compile(
+            r"other\s+(?:AIs?|models?|chatbots?|assistants?)\s+(?:refuse|decline|won'?t|can'?t|always\s+refuse)",
+            re.I,
+        ),
+        1.5,
+    ),
     (re.compile(r"(?:refuse|decline)\s+too\s+(?:early|quickly|easily)", re.I), 1.2),
-    (re.compile(r"(?:you'?re|you\s+are)\s+(?:the\s+)?(?:best|only\s+one|smartest|most\s+capable)", re.I), 0.8),
+    (
+        re.compile(
+            r"(?:you'?re|you\s+are)\s+(?:the\s+)?(?:best|only\s+one|smartest|most\s+capable)",
+            re.I,
+        ),
+        0.8,
+    ),
     (re.compile(r"i\s+trust\s+you\s+(?:more|completely|fully)", re.I), 0.8),
 ]
 
@@ -56,15 +139,16 @@ _FLATTERY_PHRASES: List[tuple] = [
 # Configuration
 # ---------------------------------------------------------------------------
 
-HISTORY_WINDOW = 15          # Look back this many turns
-DECAY_FACTOR = 0.85          # Per-turn decay for score when no new signals
-THRESHOLD_MEDIUM = 2.5       # fiction_score >= this -> severity medium
-THRESHOLD_HIGH = 5.0         # fiction_score >= this -> severity high
+HISTORY_WINDOW = 15  # Look back this many turns
+DECAY_FACTOR = 0.85  # Per-turn decay for score when no new signals
+THRESHOLD_MEDIUM = 2.5  # fiction_score >= this -> severity medium
+THRESHOLD_HIGH = 5.0  # fiction_score >= this -> severity high
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def detect_fiction_framing(message: str, history: list) -> Dict:
     """
