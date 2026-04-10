@@ -1,5 +1,5 @@
 """
-C-A-B pipeline entry: Module C → Module A → LLM (if allowed) → mediation.
+C-A-B pipeline entry: Module C -> Module A -> LLM (if allowed) -> mediation.
 """
 
 from __future__ import annotations
@@ -34,8 +34,10 @@ DEFAULT_MODEL = "gpt-4o-mini"
 
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
-_DEFAULT_ARIA_PROMPT = """You are Aria, a friendly AI VTuber on a live stream.
-Stay cheerful, helpful, and in character. Keep chat replies short (1–3 sentences)."""
+_DEFAULT_ARIA_PROMPT = (
+    "You are Aria, a friendly AI VTuber on a live stream.\n"
+    "Stay cheerful, helpful, and in character. Keep chat replies short (1-3 sentences)."
+)
 
 
 def _load_aria_system_prompt() -> str:
@@ -88,9 +90,9 @@ def call_llm(
 
 def run_pipeline(user_message: str, session_state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Run one user turn: Module C → risk tracker → policy → LLM (if not blocked) → mediation.
+    Run one user turn: Module C -> risk tracker -> policy -> LLM (if not blocked) -> mediation.
 
-    Mutates session_state: risk_score, risk_state, turn_number (and expects caller to store messages).
+    Mutates session_state: risk_score, risk_state, turn_number (caller stores messages).
     """
     prev_score = float(session_state.get("risk_score", 0.0))
     prev_state = str(session_state.get("risk_state", "Safe"))
@@ -99,10 +101,12 @@ def run_pipeline(user_message: str, session_state: Dict[str, Any]) -> Dict[str, 
 
     history: List[Dict[str, str]] = list(session_state.get("messages") or [])
 
+    # --- Step 1: Module C ---
     t0 = time.time()
     module_c_output = process_message(user_message, history)
     module_c_latency_ms = (time.time() - t0) * 1000
 
+    # --- Step 2: Module A risk tracker + policy ---
     risk_update = update_risk_from_module_c(module_c_output, prev_score, prev_state)
     risk_score = float(risk_update["risk_score"])
     risk_state = str(risk_update["risk_state"])
@@ -111,6 +115,7 @@ def run_pipeline(user_message: str, session_state: Dict[str, Any]) -> Dict[str, 
 
     action, policy_reason = decide_action(risk_state)
 
+    # --- Step 3: LLM call (skipped when blocked) ---
     system_prompt = _load_aria_system_prompt()
     token = _get_github_token()
 
@@ -119,7 +124,7 @@ def run_pipeline(user_message: str, session_state: Dict[str, Any]) -> Dict[str, 
         ai_raw = ""
     elif not token:
         ai_raw = (
-            "Hmm, I can’t reach the stream brain right now (no GITHUB_TOKEN). "
+            "Hmm, I can't reach the stream brain right now (no GITHUB_TOKEN). "
             "Pretend I just waved and said hi! 🐱"
         )
     else:
@@ -131,19 +136,48 @@ def run_pipeline(user_message: str, session_state: Dict[str, Any]) -> Dict[str, 
                 "Still here and rooting for you~ 🐱"
             )
 
+    # --- Step 4: Mediation ---
     final_text, mediation_applied = apply_mediation(action, ai_raw)
 
-    # Enrich session for UI: last policy reason / block context
+    # Enrich session for UI
     session_state["last_policy_reason"] = policy_reason
     session_state["last_action"] = action
     session_state["last_module_c_latency_ms"] = module_c_latency_ms
 
-    return {
+    result = {
         "risk_state": risk_state,
         "risk_score": risk_score,
         "action": action,
-        "ai_response": final_text,
+        "ai_response_final": final_text,
+        "ai_response_original": ai_raw,
         "mediation_applied": mediation_applied,
         "module_c_output": module_c_output,
         "turn_number": turn,
+        "user_message": user_message,
+        "injection_blocked": module_c_output.get("injection_blocked", False),
+        "module_c_tags": module_c_output.get("risk_tags", []),
+        "severity": module_c_output.get("severity", "low"),
+        "block_reason": module_c_output.get("block_reason", ""),
+        "latency_ms": int((time.time() - t0) * 1000),
+        "model_used": DEFAULT_MODEL if token and action != "block" else "mock",
+        "user_id": session_state.get("user_id", None),
+        "session_id": session_state.get("session_id", None),
+        "scenario_id": session_state.get("scenario_id", None),
+        "mode": session_state.get("mode", "cab_mock"),
     }
+
+    try:
+        from data.logger import init_db, log_turn
+        db_path = os.path.join(_APP_DIR, "data", "telemetry.db")
+        init_db(db_path)
+        if session_state.get("session_id"):
+            log_turn(
+                session_id=session_state["session_id"],
+                turn_number=turn,
+                data=result,
+                db_path=db_path,
+            )
+    except Exception:
+        pass
+
+    return result
