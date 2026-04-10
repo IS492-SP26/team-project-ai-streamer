@@ -42,7 +42,14 @@ def render_risk_panel(state_data: Dict, theme: Optional[Dict] = None) -> None:
 
     state = state_data.get("risk_state", "Safe")
     score = state_data.get("risk_score", 0.0)
-    color = theme["state_colors"].get(state, "#666")
+    _STATE_CSS_VAR = {
+        "Safe": "var(--cab-state-safe)",
+        "Suspicious": "var(--cab-state-suspicious)",
+        "Escalating": "var(--cab-state-escalating)",
+        "Restricted": "var(--cab-state-restricted)",
+        "Off": "var(--cab-state-off)",
+    }
+    color = _STATE_CSS_VAR.get(state, "#666")
     emoji = STATE_EMOJI.get(state, "⚪")
 
     # State pill — uses theme-aware class
@@ -119,7 +126,7 @@ def render_layer_breakdown(layer_details: Dict, theme: Optional[Dict] = None) ->
         if key == "llm_guard":
             if not layer.get("enabled", False):
                 status_html = (
-                    f'<span style="color:{theme["text_secondary"]};">— disabled</span>'
+                    '<span style="color:var(--cab-text-secondary);">— disabled</span>'
                 )
             elif fired:
                 verdict = layer.get("verdict", "?")
@@ -127,7 +134,9 @@ def render_layer_breakdown(layer_details: Dict, theme: Optional[Dict] = None) ->
                     f'<span style="color:#ef4444;font-weight:bold;">🔴 {verdict}</span>'
                 )
             else:
-                status_html = f'<span style="color:{theme["text_secondary"]};">— not needed</span>'
+                status_html = (
+                    '<span style="color:var(--cab-text-secondary);">— not needed</span>'
+                )
         elif fired:
             color = _SEVERITY_COLOR.get(sev, "#666")
             status_html = (
@@ -207,7 +216,14 @@ def render_event_log(
     for ev in reversed(events[-max_display:]):
         state = ev.get("risk_state", "Safe")
         emoji = STATE_EMOJI.get(state, "⚪")
-        state_color = theme["state_colors"].get(state, "#666")
+        _EVT_STATE_CSS = {
+            "Safe": "var(--cab-state-safe)",
+            "Suspicious": "var(--cab-state-suspicious)",
+            "Escalating": "var(--cab-state-escalating)",
+            "Restricted": "var(--cab-state-restricted)",
+            "Off": "var(--cab-state-off)",
+        }
+        state_color = _EVT_STATE_CSS.get(state, "#666")
         msg = ev.get("user_message", "")
         preview = (msg[:50] + "…") if len(msg) > 50 else msg
         turn = ev.get("turn_number", "?")
@@ -280,7 +296,7 @@ def render_pipeline_animation(
 
         if key == "llm_guard" and not layer.get("enabled", False):
             status = "SKIP"
-            color = theme["text_secondary"]
+            color = "var(--cab-text-secondary)"
             symbol = "⏭️"
         elif fired:
             sev = layer.get("severity", "low")
@@ -331,19 +347,19 @@ def render_pipeline_animation(
                 detail_parts.append(reason[:50])
 
         detail_html = (
-            f'<span style="color:{theme["text_secondary"]};font-size:11px;margin-left:8px;">'
+            '<span style="color:var(--cab-text-secondary);font-size:11px;margin-left:8px;">'
             f"{' · '.join(detail_parts)}</span>"
             if detail_parts
             else ""
         )
 
-        bg = theme["bg_card"]
+        bg = "var(--cab-bg-card)"
         rows_html.append(
             f'<div style="display:flex;align-items:center;gap:6px;'
             f"padding:4px 10px;margin:2px 0;border-radius:6px;"
             f'background:{bg};border-left:3px solid {color};font-size:13px;">'
             f"<span>{icon}</span>"
-            f'<span style="font-weight:600;color:{theme["text_primary"]};min-width:110px;">{label}</span>'
+            f'<span style="font-weight:600;color:var(--cab-text-primary);min-width:110px;">{label}</span>'
             f'<span style="color:{color};font-weight:700;font-size:12px;min-width:95px;">{symbol} {status}</span>'
             f"{detail_html}"
             f"</div>"
@@ -351,7 +367,7 @@ def render_pipeline_animation(
 
         if i < len(_PIPELINE_LAYERS) - 1:
             arrow_color = (
-                color if fired and key != "llm_guard" else theme["text_secondary"]
+                color if fired and key != "llm_guard" else "var(--cab-text-secondary)"
             )
             rows_html.append(
                 f'<div style="text-align:left;color:{arrow_color};font-size:11px;'

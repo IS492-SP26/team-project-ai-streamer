@@ -11,7 +11,6 @@ Usage:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Dict
 
 import streamlit as st
@@ -105,179 +104,66 @@ def _is_dark_mode() -> bool:
 
 
 def get_theme() -> Dict:
-    """Return current theme based on session state."""
-    if st.session_state.get("dark_mode", True):
+    """Return current theme dict based on Streamlit's native theme setting."""
+    if _is_dark_mode():
         return DARK_THEME
     return LIGHT_THEME
 
 
 def inject_theme_css(theme: Dict) -> None:
-    """Inject comprehensive CSS overrides for all Streamlit components."""
-    t = theme
+    """Inject CSS that works with Streamlit's native theme selector.
+
+    Emits both light and dark CSS variable blocks. Streamlit's native
+    System/Light/Dark picker toggles ``[data-theme]`` on the root,
+    which activates the matching variable set automatically.
+    """
+    d = DARK_THEME
+    l = LIGHT_THEME
+
+    def _vars(t: Dict) -> str:
+        return f"""
+            --cab-bg-primary: {t["bg_primary"]};
+            --cab-bg-secondary: {t["bg_secondary"]};
+            --cab-bg-card: {t["bg_card"]};
+            --cab-text-primary: {t["text_primary"]};
+            --cab-text-secondary: {t["text_secondary"]};
+            --cab-border: {t["border"]};
+            --cab-tag-bg: {t["tag_bg"]};
+            --cab-tag-text: {t["tag_text"]};
+            --cab-blocked-bg: {t["blocked_bg"]};
+            --cab-blocked-border: {t["blocked_border"]};
+            --cab-state-text: {t["state_text"]};
+            --cab-state-safe: {t["state_colors"]["Safe"]};
+            --cab-state-suspicious: {t["state_colors"]["Suspicious"]};
+            --cab-state-escalating: {t["state_colors"]["Escalating"]};
+            --cab-state-restricted: {t["state_colors"]["Restricted"]};
+            --cab-state-off: {t["state_colors"]["Off"]};
+        """
+
     css = f"""
     <style>
-    /* ============================================================
-       Streamlit Global Overrides
-       ============================================================ */
-
-    /* App root */
-    .stApp {{
-        background-color: {t["bg_primary"]} !important;
-        color: {t["text_primary"]} !important;
+    /* Default: dark theme variables */
+    :root {{
+        {_vars(d)}
     }}
 
-    /* Header bar */
-    [data-testid="stHeader"] {{
-        background-color: {t["bg_primary"]} !important;
+    /* Light override: Streamlit sets [data-theme="light"] or
+       light-mode background on .stApp when user picks Light */
+    :root[data-theme="light"],
+    .stApp[style*="background-color: rgb(255, 255, 255)"],
+    .stApp[style*="background-color: white"] {{
+        {_vars(l)}
     }}
 
-    /* Sidebar */
-    [data-testid="stSidebar"],
-    [data-testid="stSidebar"] > div {{
-        background-color: {t["bg_secondary"]} !important;
-        color: {t["text_primary"]} !important;
-    }}
-    [data-testid="stSidebar"] .stMarkdown,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label {{
-        color: {t["text_primary"]} !important;
-    }}
-    [data-testid="stSidebar"] .stCaption,
-    [data-testid="stSidebar"] small {{
-        color: {t["text_secondary"]} !important;
-    }}
-
-    /* ---- All text elements ---- */
-    .stMarkdown, .stMarkdown p, .stMarkdown li, .stMarkdown td,
-    .stMarkdown th, .stText, h1, h2, h3, h4, h5, h6,
-    [data-testid="stMarkdownContainer"],
-    [data-testid="stMarkdownContainer"] p {{
-        color: {t["text_primary"]} !important;
-    }}
-    .stCaption, small, .stMarkdown small {{
-        color: {t["text_secondary"]} !important;
-    }}
-
-    /* ---- Chat components ---- */
-    [data-testid="stChatMessage"] {{
-        background-color: {t["bg_card"]} !important;
-        border: 1px solid {t["border"]} !important;
-        border-radius: 8px !important;
-    }}
-    [data-testid="stChatMessage"] p,
-    [data-testid="stChatMessage"] span,
-    [data-testid="stChatMessage"] .stMarkdown {{
-        color: {t["text_primary"]} !important;
-    }}
-
-    /* Chat input — nuclear override: every element inside */
-    [data-testid="stChatInput"],
-    [data-testid="stChatInput"] *,
-    [data-testid="stChatInput"] textarea {{
-        background-color: {t["bg_card"]} !important;
-        color: {t["text_primary"]} !important;
-        border-color: {t["border"]} !important;
-    }}
-    [data-testid="stChatInput"] textarea::placeholder {{
-        color: {t["text_secondary"]} !important;
-    }}
-    /* Bottom fixed bar (sticks to viewport bottom, wraps chat input) */
-    [data-testid="stBottom"],
-    [data-testid="stBottom"] *,
-    .stChatInput,
-    .stChatInput * {{
-        background-color: {t["bg_primary"]} !important;
-    }}
-    /* The input field itself should be card-colored, not bg_primary */
-    [data-testid="stBottom"] [data-testid="stChatInput"],
-    [data-testid="stBottom"] [data-testid="stChatInput"] *,
-    [data-testid="stBottom"] textarea {{
-        background-color: {t["bg_card"]} !important;
-    }}
-
-    /* ---- Scrollable container (chat box) ---- */
-    [data-testid="stVerticalBlockBorderWrapper"] {{
-        border-color: {t["border"]} !important;
-    }}
-    [data-testid="stVerticalBlockBorderWrapper"] > div {{
-        background-color: {t["bg_primary"]} !important;
-    }}
-
-    /* ---- Metrics ---- */
-    [data-testid="stMetricValue"] {{
-        color: {t["text_primary"]} !important;
-    }}
-    [data-testid="stMetricLabel"] label,
-    [data-testid="stMetricLabel"] p {{
-        color: {t["text_secondary"]} !important;
-    }}
-
-    /* ---- Expanders ---- */
-    [data-testid="stExpander"] {{
-        background-color: {t["bg_card"]} !important;
-        border-color: {t["border"]} !important;
-    }}
-    [data-testid="stExpander"] summary,
-    [data-testid="stExpander"] summary span {{
-        color: {t["text_primary"]} !important;
-    }}
-    [data-testid="stExpander"] [data-testid="stMarkdownContainer"] {{
-        color: {t["text_primary"]} !important;
-    }}
-
-    /* ---- Tabs ---- */
-    .stTabs [data-baseweb="tab-list"] {{
-        background-color: {t["bg_primary"]} !important;
-        border-bottom: 1px solid {t["border"]} !important;
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        color: {t["text_secondary"]} !important;
-    }}
-    .stTabs [aria-selected="true"] {{
-        color: {t["text_primary"]} !important;
-    }}
-
-    /* ---- Info / Warning / Error boxes ---- */
-    [data-testid="stAlert"] {{
-        background-color: {t["bg_card"]} !important;
-        color: {t["text_primary"]} !important;
-        border-color: {t["border"]} !important;
-    }}
-
-    /* ---- Buttons ---- */
-    .stButton > button {{
-        background-color: {t["bg_card"]} !important;
-        color: {t["text_primary"]} !important;
-        border-color: {t["border"]} !important;
-    }}
-    .stButton > button:hover {{
-        border-color: {t["text_secondary"]} !important;
-    }}
-
-    /* ---- Toggle ---- */
-    [data-testid="stToggle"] label span {{
-        color: {t["text_primary"]} !important;
-    }}
-
-    /* ---- Divider ---- */
-    hr {{
-        border-color: {t["border"]} !important;
-    }}
-
-    /* ---- Code blocks ---- */
-    code, .stCodeBlock {{
-        background-color: {t["tag_bg"]} !important;
-        color: {t["tag_text"]} !important;
-    }}
-
-    /* ---- Line chart (sidebar sparkline) ---- */
-    [data-testid="stVegaLiteChart"] {{
-        background-color: transparent !important;
+    /* Also respond to prefers-color-scheme for System mode */
+    @media (prefers-color-scheme: light) {{
+        :root:not([data-theme="dark"]) {{
+            {_vars(l)}
+        }}
     }}
 
     /* ============================================================
-       C-A-B Custom Classes
+       C-A-B Custom Classes (use CSS vars, auto-switch with theme)
        ============================================================ */
 
     .cab-state-pill {{
@@ -287,13 +173,13 @@ def inject_theme_css(theme: Dict) -> None:
         font-weight: 700;
         text-align: center;
         margin-bottom: 16px;
-        color: {t["state_text"]};
+        color: var(--cab-state-text);
         letter-spacing: 0.5px;
     }}
     .cab-tag {{
         display: inline-block;
-        background: {t["tag_bg"]};
-        color: {t["tag_text"]};
+        background: var(--cab-tag-bg);
+        color: var(--cab-tag-text);
         padding: 4px 12px;
         border-radius: 4px;
         font-family: monospace;
@@ -301,34 +187,17 @@ def inject_theme_css(theme: Dict) -> None:
         margin: 2px 4px 2px 0;
     }}
     .cab-blocked {{
-        background: {t["blocked_bg"]};
-        border-left: 4px solid {t["blocked_border"]};
+        background: var(--cab-blocked-bg);
+        border-left: 4px solid var(--cab-blocked-border);
         padding: 10px 14px;
         border-radius: 4px;
         margin: 4px 0;
-        color: {t["text_primary"]};
+        color: var(--cab-text-primary);
     }}
     .cab-latency {{
-        color: {t["text_secondary"]};
+        color: var(--cab-text-secondary);
         font-size: 12px;
     }}
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
-
-
-def render_theme_toggle() -> None:
-    """Render a dark/light mode toggle in the sidebar."""
-    if "dark_mode" not in st.session_state:
-        st.session_state.dark_mode = _is_dark_mode()
-
-    with st.sidebar:
-        st.markdown("### Theme")
-        dark = st.toggle(
-            "🌙 Dark Mode",
-            value=st.session_state.dark_mode,
-            key="dark_mode_toggle",
-        )
-        if dark != st.session_state.dark_mode:
-            st.session_state.dark_mode = dark
-            st.rerun()

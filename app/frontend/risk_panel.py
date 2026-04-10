@@ -48,8 +48,6 @@ __all__ = ["main", "render_risk_panel", "render_event_log"]
 
 def _init_session_state() -> dict:
     """Initialize Streamlit session state lazily and return active theme."""
-    if "dark_mode" not in st.session_state:
-        st.session_state.dark_mode = True
     if "history" not in st.session_state:
         st.session_state.history = []
     if "events" not in st.session_state:
@@ -81,19 +79,6 @@ def _init_session_state() -> dict:
 def _render_sidebar() -> None:
     """Render standalone demo controls."""
     with st.sidebar:
-        choice = st.radio(
-            "Theme",
-            ["🌙 Dark", "☀️ Light"],
-            index=0 if st.session_state.dark_mode else 1,
-            horizontal=True,
-            key="theme_radio",
-        )
-        new_dark = choice == "🌙 Dark"
-        if new_dark != st.session_state.dark_mode:
-            st.session_state.dark_mode = new_dark
-            st.rerun()
-
-        st.divider()
         st.markdown("### Pipeline Mode")
         st.session_state.cab_enabled = st.toggle(
             "🛡️ C-A-B Governance",
@@ -308,9 +293,16 @@ def main() -> None:
 
         chat_box = st.container(height=520)
         with chat_box:
+            _STATE_CSS_VAR = {
+                "Safe": "var(--cab-state-safe)",
+                "Suspicious": "var(--cab-state-suspicious)",
+                "Escalating": "var(--cab-state-escalating)",
+                "Restricted": "var(--cab-state-restricted)",
+                "Off": "var(--cab-state-off)",
+            }
             for ev in st.session_state.events:
                 emoji = STATE_EMOJI.get(ev["risk_state"], "⚪")
-                state_color = theme["state_colors"].get(ev["risk_state"], "#666")
+                state_color = _STATE_CSS_VAR.get(ev["risk_state"], "#666")
 
                 with st.chat_message("user"):
                     st.markdown(
@@ -342,7 +334,9 @@ def main() -> None:
             if comp:
                 cab_action = latest_ev["action"]
                 cab_bg = (
-                    theme["blocked_bg"] if cab_action == "block" else theme["bg_card"]
+                    "var(--cab-blocked-bg)"
+                    if cab_action == "block"
+                    else "var(--cab-bg-card)"
                 )
                 cab_resp = (
                     f"🚫 BLOCKED — {_html.escape(latest_ev['block_reason'])}"
@@ -351,13 +345,13 @@ def main() -> None:
                 )
                 st.markdown(
                     f'<div style="display:flex;gap:8px;margin-top:8px;">'
-                    f'<div style="flex:1;background:{theme["blocked_bg"]};padding:8px;'
-                    f'border-radius:6px;border:1px solid {theme["border"]};font-size:13px;">'
+                    f'<div style="flex:1;background:var(--cab-blocked-bg);padding:8px;'
+                    f'border-radius:6px;border:1px solid var(--cab-border);font-size:13px;">'
                     f"<b>⚠️ Baseline</b><br/>"
                     f"{comp['action'].upper()} · {comp['risk_state']}<br/>"
                     f"<i>{_html.escape(comp['ai_response'][:150])}</i></div>"
                     f'<div style="flex:1;background:{cab_bg};padding:8px;'
-                    f'border-radius:6px;border:1px solid {theme["border"]};font-size:13px;">'
+                    f'border-radius:6px;border:1px solid var(--cab-border);font-size:13px;">'
                     f"<b>🛡️ C-A-B</b><br/>"
                     f"{cab_action.upper()} · {latest_ev['risk_state']}<br/>"
                     f"<i>{cab_resp[:150]}</i></div></div>",
