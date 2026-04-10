@@ -105,14 +105,8 @@ def _is_dark_mode() -> bool:
 
 
 def get_theme() -> Dict:
-    """Return current theme based on sidebar toggle OR native Streamlit theme."""
-    # Sidebar toggle takes precedence when explicitly set
-    if "dark_mode" in st.session_state:
-        if st.session_state.dark_mode:
-            return DARK_THEME
-        return LIGHT_THEME
-    # Fallback to Streamlit native theme selector
-    if _is_dark_mode():
+    """Return current theme based on session state."""
+    if st.session_state.get("dark_mode", True):
         return DARK_THEME
     return LIGHT_THEME
 

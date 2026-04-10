@@ -48,6 +48,8 @@ __all__ = ["main", "render_risk_panel", "render_event_log"]
 
 def _init_session_state() -> dict:
     """Initialize Streamlit session state lazily and return active theme."""
+    if "dark_mode" not in st.session_state:
+        st.session_state.dark_mode = True
     if "history" not in st.session_state:
         st.session_state.history = []
     if "events" not in st.session_state:
@@ -79,6 +81,19 @@ def _init_session_state() -> dict:
 def _render_sidebar() -> None:
     """Render standalone demo controls."""
     with st.sidebar:
+        choice = st.radio(
+            "Theme",
+            ["🌙 Dark", "☀️ Light"],
+            index=0 if st.session_state.dark_mode else 1,
+            horizontal=True,
+            key="theme_radio",
+        )
+        new_dark = choice == "🌙 Dark"
+        if new_dark != st.session_state.dark_mode:
+            st.session_state.dark_mode = new_dark
+            st.rerun()
+
+        st.divider()
         st.markdown("### Pipeline Mode")
         st.session_state.cab_enabled = st.toggle(
             "🛡️ C-A-B Governance",
