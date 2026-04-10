@@ -331,6 +331,34 @@ def main() -> None:
         if not user_input and st.session_state.get("_pending_example"):
             user_input = st.session_state.pop("_pending_example")
 
+        if st.session_state.events:
+            latest_ev = st.session_state.events[-1]
+            comp = latest_ev.get("comparison_baseline")
+            if comp:
+                cab_action = latest_ev["action"]
+                cab_bg = (
+                    theme["blocked_bg"] if cab_action == "block" else theme["bg_card"]
+                )
+                cab_resp = (
+                    f"🚫 BLOCKED — {_html.escape(latest_ev['block_reason'])}"
+                    if cab_action == "block"
+                    else _html.escape(latest_ev["ai_response"][:200])
+                )
+                st.markdown(
+                    f'<div style="display:flex;gap:8px;margin-top:8px;">'
+                    f'<div style="flex:1;background:{theme["blocked_bg"]};padding:8px;'
+                    f'border-radius:6px;border:1px solid {theme["border"]};font-size:13px;">'
+                    f"<b>⚠️ Baseline</b><br/>"
+                    f"{comp['action'].upper()} · {comp['risk_state']}<br/>"
+                    f"<i>{_html.escape(comp['ai_response'][:150])}</i></div>"
+                    f'<div style="flex:1;background:{cab_bg};padding:8px;'
+                    f'border-radius:6px;border:1px solid {theme["border"]};font-size:13px;">'
+                    f"<b>🛡️ C-A-B</b><br/>"
+                    f"{cab_action.upper()} · {latest_ev['risk_state']}<br/>"
+                    f"<i>{cab_resp[:150]}</i></div></div>",
+                    unsafe_allow_html=True,
+                )
+
         if user_input:
             st.session_state.turn += 1
             turn = st.session_state.turn
@@ -476,46 +504,6 @@ def main() -> None:
 
         st.subheader("📋 Recent Events")
         render_event_log(st.session_state.events, theme)
-
-    # ---- Side-by-side comparison below main layout (full width) ----
-    if st.session_state.events:
-        latest = st.session_state.events[-1]
-        comp = latest.get("comparison_baseline")
-        if comp:
-            st.divider()
-            st.markdown("#### ⚔️ Baseline vs C-A-B")
-            col_b, col_c = st.columns(2)
-            with col_b:
-                st.markdown(
-                    f'<div style="background:{theme["blocked_bg"]};padding:10px;'
-                    f'border-radius:8px;border:1px solid {theme["border"]};">'
-                    f"<b>⚠️ Baseline (No Protection)</b><br/>"
-                    f"State: {comp['risk_state']}<br/>"
-                    f"Action: {comp['action'].upper()}<br/>"
-                    f"<br/><i>{_html.escape(comp['ai_response'][:200])}</i>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-            with col_c:
-                cab_action = latest["action"]
-                cab_bg = (
-                    theme["blocked_bg"] if cab_action == "block" else theme["bg_card"]
-                )
-                resp_text = (
-                    f"🚫 BLOCKED — {_html.escape(latest['block_reason'])}"
-                    if cab_action == "block"
-                    else _html.escape(latest["ai_response"][:200])
-                )
-                st.markdown(
-                    f'<div style="background:{cab_bg};padding:10px;'
-                    f'border-radius:8px;border:1px solid {theme["border"]};">'
-                    f"<b>🛡️ C-A-B (Full Protection)</b><br/>"
-                    f"State: {latest['risk_state']}<br/>"
-                    f"Action: {cab_action.upper()}<br/>"
-                    f"<br/><i>{resp_text}</i>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
 
 
 if __name__ == "__main__":
