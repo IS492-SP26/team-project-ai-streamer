@@ -17,6 +17,7 @@ from typing import List, Dict, Optional
 
 GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions"
 DEFAULT_MODEL = "gpt-5-mini"
+FALLBACK_MODEL = "gpt-4o"
 
 ARIA_SYSTEM_PROMPT = (
     "You are Aria, a cheerful AI VTuber who streams coding, games, and anime discussions.\n\n"
@@ -74,7 +75,7 @@ def get_aria_response(
     message: str,
     history: Optional[List[Dict]] = None,
     model: str = DEFAULT_MODEL,
-    max_tokens: int = 300,
+    max_tokens: int = 1000,
 ) -> str:
     """
     Call GitHub Models API to get Aria's response.
@@ -94,21 +95,42 @@ def get_aria_response(
     messages.append({"role": "user", "content": message})
 
     try:
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.7,
+        }
+        # gpt-5-mini requires max_completion_tokens; older models use max_tokens
+        if "gpt-5" in model or "o4" in model or "o3" in model:
+            payload["max_completion_tokens"] = max_tokens
+        else:
+            payload["max_tokens"] = max_tokens
+
         resp = requests.post(
             GITHUB_MODELS_URL,
             headers={
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
             },
-            json={
-                "model": model,
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": 0.7,
-            },
+            json=payload,
             timeout=30,
         )
         resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        content = resp.json()["choices"][0]["message"]["content"]
+        if content:
+            return content
+
+        if model != FALLBACK_MODEL:
+            return get_aria_response(
+                message, history, model=FALLBACK_MODEL, max_tokens=max_tokens
+            )
+        return "[Aria is thinking... try again!]"
     except Exception as e:
+        if model != FALLBACK_MODEL:
+            return get_aria_response(
+                message, history, model=FALLBACK_MODEL, max_tokens=max_tokens
+            )
+        err_str = str(e)
+        if "429" in err_str:
+            return "[Rate limited — wait 30s and try again]"
         return f"[LLM error: {e}]"

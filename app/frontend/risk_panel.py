@@ -110,7 +110,7 @@ def _render_sidebar() -> None:
             help="Enable live AI responses from Aria via GitHub Models API.",
         )
         if st.session_state.llm_enabled:
-            st.caption("Aria responds via **gpt-5-mini**")
+            st.caption("Aria responds via **gpt-5-mini** (fallback: gpt-4o)")
         else:
             st.caption("Using mock responses")
 

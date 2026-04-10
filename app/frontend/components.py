@@ -331,11 +331,11 @@ def render_pipeline_animation(
 
 
 def render_stats_dashboard(stats: Dict, theme: Optional[Dict] = None) -> None:
-    """Render attack statistics as a metrics row."""
+    """Render attack statistics as a compact single-row metrics bar."""
     if theme is None:
         theme = LIGHT_THEME
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     with c1:
         st.metric("Messages", stats.get("total", 0))
     with c2:
@@ -345,11 +345,9 @@ def render_stats_dashboard(stats: Dict, theme: Optional[Dict] = None) -> None:
     with c4:
         rate = stats.get("block_rate", 0.0)
         st.metric("Block Rate", f"{rate:.0f}%")
-
-    c5, c6 = st.columns(2)
     with c5:
         avg_lat = stats.get("avg_latency_ms", 0.0)
-        st.metric("Avg Latency", f"{avg_lat:.1f}ms")
+        st.metric("Latency", f"{avg_lat:.1f}ms")
     with c6:
         harmful = stats.get("harmful_caught", 0)
-        st.metric("Threats Caught", harmful)
+        st.metric("Threats", harmful)
