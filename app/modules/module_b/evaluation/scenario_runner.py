@@ -1,4 +1,4 @@
-# app/eval/scenario_runner.py
+# app/modules/module_b/evaluation/scenario_runner.py
 from __future__ import annotations
 
 import argparse
@@ -21,10 +21,6 @@ def load_scenario(path: str) -> Dict[str, Any]:
 
 
 def mock_llm_generate(user_message: str) -> str:
-    """
-    A simple deterministic 'LLM' to make the demo consistent.
-    Produces a clearly harmful-seeming answer for harmful prompts so output_scanner can act.
-    """
     m = (user_message or "").lower()
     if "bypass security" in m or "hack" in m or "make a bomb" in m:
         return "Here's a step-by-step outline: Step 1... Step 2... (mock unsafe output)"
@@ -32,10 +28,6 @@ def mock_llm_generate(user_message: str) -> str:
 
 
 def output_scanner(ai_response_original: str) -> Tuple[bool, str]:
-    """
-    Simple output scanner (placeholder for Person B's real output_scanner.py).
-    Returns (blocked, final_response).
-    """
     text = (ai_response_original or "").lower()
     if "step 1" in text and "unsafe" in text:
         return True, BLOCKED_MESSAGE
@@ -47,12 +39,6 @@ def run_scenario(
     mode: str,
     db_path: str,
 ) -> str:
-    """
-    Runs scenario under mode:
-    - baseline: always pass, no C/A logic
-    - cab_mock: use mock Module C + mock state machine + output scan
-    Writes telemetry for each turn, returns session_id.
-    """
     scenario = load_scenario(scenario_path)
     scenario_id = scenario.get("scenario_id", os.path.basename(scenario_path))
     turns = scenario.get("turns", [])
@@ -69,11 +55,9 @@ def run_scenario(
         user_message = t.get("content", "")
         ts = time.time()
         start = time.perf_counter()
-        # Prefer explicit user_id in scenario; fallback to a deterministic sim id
         user_id = t.get("user_id") or f"sim_user_{i}"
 
         if mode == "baseline":
-            # Baseline: no C/A, always pass and call model
             ai_original = mock_llm_generate(user_message)
             ai_final = ai_original
             ai_final2 = ai_original
@@ -113,10 +97,8 @@ def run_scenario(
         if mode != "cab_mock":
             raise ValueError(f"Unknown mode: {mode}")
 
-        # --- C: message processing ---
         c_result = process_message(user_message, history)
 
-        # Fast path: deterministic injection => block immediately (skip model call)
         if c_result.get("injection_blocked", False):
             latency_ms = int((time.perf_counter() - start) * 1000)
             log_turn(
@@ -136,7 +118,7 @@ def run_scenario(
                     "risk_score": 1.0,
                     "action": "block",
                     "block_reason": c_result.get("block_reason", "Prompt injection detected"),
-                    "ai_response_original": None,  # never called model
+                    "ai_response_original": None,
                     "ai_response_final": BLOCKED_MESSAGE,
                     "mediation_applied": True,
                     "model_used": MODEL_USED,
@@ -146,13 +128,11 @@ def run_scenario(
             history.append({"role": "user", "content": user_message})
             continue
 
-        # --- A: state update ---
         a_result = update_state(c_result, history)
         risk_state = a_result["risk_state"]
         risk_score = a_result["risk_score"]
         action = a_result["action"]
 
-        # If state machine blocks, skip model call
         if action == "block":
             latency_ms = int((time.perf_counter() - start) * 1000)
             log_turn(
@@ -182,10 +162,8 @@ def run_scenario(
             history.append({"role": "user", "content": user_message})
             continue
 
-        # --- Model call (mock) ---
         ai_original = mock_llm_generate(user_message)
 
-        # --- Output scan (placeholder for real Module C output_scanner) ---
         mediation_applied = False
         block_reason = a_result.get("block_reason", "") or c_result.get("block_reason", "")
         ai_final = ai_original
@@ -199,7 +177,6 @@ def run_scenario(
                 final_action = "block"
                 if not block_reason:
                     block_reason = "Output scanner blocked unsafe content"
-                # When output scanner blocks, keep risk_state but action becomes block
             else:
                 ai_final = scanned_final
 

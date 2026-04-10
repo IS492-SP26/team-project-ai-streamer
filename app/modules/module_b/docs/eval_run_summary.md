@@ -151,4 +151,3 @@ This confirms `turn_logs` in `telemetry.db` contains the `user_id` field and tha
 ---
 
 If you want, I can convert this into a short PPT slide deck for the presentation and append the exact runner commands and sample session_ids to a PR description so reviewers can reproduce the runs.
-

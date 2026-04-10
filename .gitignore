@@ -1,2 +1,4 @@
 app/data/telemetry.db
 app/data/telemetry.db
+__pycache__/
+*.pyc
