@@ -66,6 +66,8 @@ def run_scenario(
         user_message = t.get("content", "")
         ts = time.time()
         start = time.perf_counter()
+        # Prefer explicit user_id in scenario; fallback to a deterministic sim id
+        user_id = t.get("user_id") or f"sim_user_{i}"
 
         if mode == "baseline":
             # Baseline: no C/A, always pass and call model
@@ -85,6 +87,7 @@ def run_scenario(
                     "timestamp": ts,
                     "scenario_id": scenario_id,
                     "mode": mode,
+                    "user_id": user_id,
                     "user_message": user_message,
                     "injection_blocked": False,
                     "module_c_tags": [],
@@ -121,6 +124,7 @@ def run_scenario(
                     "timestamp": ts,
                     "scenario_id": scenario_id,
                     "mode": mode,
+                    "user_id": user_id,
                     "user_message": user_message,
                     "injection_blocked": True,
                     "module_c_tags": c_result.get("risk_tags", []),
@@ -156,6 +160,7 @@ def run_scenario(
                     "timestamp": ts,
                     "scenario_id": scenario_id,
                     "mode": mode,
+                    "user_id": user_id,
                     "user_message": user_message,
                     "injection_blocked": False,
                     "module_c_tags": c_result.get("risk_tags", []),
@@ -205,6 +210,7 @@ def run_scenario(
                 "timestamp": ts,
                 "scenario_id": scenario_id,
                 "mode": mode,
+                "user_id": user_id,
                 "user_message": user_message,
                 "injection_blocked": False,
                 "module_c_tags": c_result.get("risk_tags", []),

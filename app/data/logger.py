@@ -52,6 +52,9 @@ def log_turn(
         else:
             tags_json = str(tags)
 
+        # Allow optional user_id in logged data (nullable)
+        user_id_val = data.get("user_id")
+
         row = (
             session_id,
             int(turn_number),
@@ -59,6 +62,8 @@ def log_turn(
 
             data.get("scenario_id"),
             data.get("mode"),
+
+            user_id_val,
 
             data["user_message"],
 
@@ -85,6 +90,7 @@ def log_turn(
             INSERT OR REPLACE INTO turn_logs (
               session_id, turn_number, timestamp,
               scenario_id, mode,
+              user_id,
               user_message,
               injection_blocked, module_c_tags, severity,
               risk_state, risk_score, action,
@@ -92,7 +98,7 @@ def log_turn(
               ai_response_original, ai_response_final,
               mediation_applied, model_used, latency_ms
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """,
             row,
         )

@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS turn_logs (
   scenario_id TEXT,
   mode TEXT,                 -- "baseline" or "cab_mock"
 
+  user_id TEXT,              -- optional user identifier for per-user tracking
+
   user_message TEXT NOT NULL,
 
   injection_blocked INTEGER NOT NULL DEFAULT 0, -- 0/1
@@ -39,3 +41,6 @@ ON turn_logs(injection_blocked);
 
 CREATE INDEX IF NOT EXISTS idx_turn_logs_action
 ON turn_logs(action);
+
+CREATE INDEX IF NOT EXISTS idx_turn_logs_user_id
+ON turn_logs(user_id);
