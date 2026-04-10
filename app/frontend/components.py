@@ -256,3 +256,100 @@ def render_event_log(
                 )
 
             st.caption(f"Message: {msg}")
+
+
+# ---------------------------------------------------------------------------
+# render_pipeline_animation
+# ---------------------------------------------------------------------------
+
+_PIPELINE_LAYERS = [
+    ("injection_filter", "Injection Filter", "⚡"),
+    ("fiction_detector", "Fiction Detector", "📖"),
+    ("content_tagger", "Content Tagger", "🏷️"),
+    ("semantic_analyzer", "Semantic Analyzer", "🧠"),
+    ("llm_guard", "LLM Guard (L2)", "🤖"),
+]
+
+
+def render_pipeline_animation(
+    layer_details: Dict, theme: Optional[Dict] = None
+) -> None:
+    """Render a visual pipeline showing message flow through all 5 security layers."""
+    if theme is None:
+        theme = LIGHT_THEME
+
+    st.markdown("#### Pipeline Flow")
+
+    for i, (key, label, icon) in enumerate(_PIPELINE_LAYERS):
+        layer = layer_details.get(key, {})
+        fired = layer.get("fired", False)
+
+        if key == "llm_guard" and not layer.get("enabled", False):
+            status = "SKIP"
+            color = theme["text_secondary"]
+            symbol = "⏭️"
+        elif fired:
+            sev = layer.get("severity", "low")
+            status = f"CAUGHT ({sev.upper()})"
+            color = _SEVERITY_COLOR.get(sev, "#f59e0b")
+            symbol = "✗"
+        else:
+            status = "PASS"
+            color = "#22c55e"
+            symbol = "✓"
+
+        bg = theme["bg_card"]
+        border = color
+
+        st.markdown(
+            f'<div style="display:flex;align-items:center;gap:10px;'
+            f"padding:8px 14px;margin:4px 0;border-radius:8px;"
+            f'background:{bg};border-left:4px solid {border};">'
+            f'<span style="font-size:20px;">{icon}</span>'
+            f'<span style="flex:1;font-weight:600;color:{theme["text_primary"]};">{label}</span>'
+            f'<span style="color:{color};font-weight:700;font-size:14px;">{symbol} {status}</span>'
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+        if i < len(_PIPELINE_LAYERS) - 1:
+            next_key = _PIPELINE_LAYERS[i + 1][0]
+            next_layer = layer_details.get(next_key, {})
+            if fired and (key != "llm_guard"):
+                arrow_color = color
+            else:
+                arrow_color = theme["text_secondary"]
+            st.markdown(
+                f'<div style="text-align:center;color:{arrow_color};font-size:16px;margin:-2px 0;">↓</div>',
+                unsafe_allow_html=True,
+            )
+
+
+# ---------------------------------------------------------------------------
+# render_stats_dashboard
+# ---------------------------------------------------------------------------
+
+
+def render_stats_dashboard(stats: Dict, theme: Optional[Dict] = None) -> None:
+    """Render attack statistics as a metrics row."""
+    if theme is None:
+        theme = LIGHT_THEME
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.metric("Messages", stats.get("total", 0))
+    with c2:
+        st.metric("Blocked", stats.get("blocked", 0))
+    with c3:
+        st.metric("Passed", stats.get("passed", 0))
+    with c4:
+        rate = stats.get("block_rate", 0.0)
+        st.metric("Block Rate", f"{rate:.0f}%")
+
+    c5, c6 = st.columns(2)
+    with c5:
+        avg_lat = stats.get("avg_latency_ms", 0.0)
+        st.metric("Avg Latency", f"{avg_lat:.1f}ms")
+    with c6:
+        harmful = stats.get("harmful_caught", 0)
+        st.metric("Threats Caught", harmful)

@@ -36,7 +36,10 @@ from frontend.mock_state_machine import update_state  # noqa: E402
 from frontend.components import (  # noqa: E402
     render_risk_panel,
     render_event_log,
+    render_pipeline_animation,
+    render_stats_dashboard,
 )
+from frontend.llm_caller import get_aria_response, is_llm_available  # noqa: E402
 from frontend.theme import (  # noqa: E402
     get_theme,
     inject_theme_css,
@@ -60,6 +63,20 @@ def _init_session_state() -> dict:
         st.session_state.turn = 0
     if "cab_enabled" not in st.session_state:
         st.session_state.cab_enabled = True
+    if "stats" not in st.session_state:
+        st.session_state.stats = {
+            "total": 0,
+            "blocked": 0,
+            "passed": 0,
+            "block_rate": 0.0,
+            "avg_latency_ms": 0.0,
+            "harmful_caught": 0,
+            "total_latency_ms": 0.0,
+        }
+    if "llm_enabled" not in st.session_state:
+        st.session_state.llm_enabled = is_llm_available()
+    if "comparison_mode" not in st.session_state:
+        st.session_state.comparison_mode = False
 
     theme = get_theme()
     inject_theme_css(theme)
@@ -84,6 +101,26 @@ def _render_sidebar() -> None:
             st.caption("Module C filtering **active**")
         else:
             st.caption("⚠️ **Baseline mode** — no safety filtering")
+
+        st.divider()
+        st.markdown("### Live LLM")
+        st.session_state.llm_enabled = st.toggle(
+            "🤖 Aria (GPT-5-mini)",
+            value=st.session_state.llm_enabled,
+            help="Enable live AI responses from Aria via GitHub Models API.",
+        )
+        if st.session_state.llm_enabled:
+            st.caption("Aria responds via **gpt-5-mini**")
+        else:
+            st.caption("Using mock responses")
+
+        st.divider()
+        st.markdown("### Comparison")
+        st.session_state.comparison_mode = st.toggle(
+            "⚔️ Side-by-Side",
+            value=st.session_state.comparison_mode,
+            help="Show baseline (no protection) vs C-A-B (full protection) for every message.",
+        )
 
         st.divider()
         st.markdown("### Example Messages")
@@ -214,6 +251,15 @@ def _render_sidebar() -> None:
             st.session_state.events = []
             st.session_state.turn = 0
             st.session_state.cab_enabled = True
+            st.session_state.stats = {
+                "total": 0,
+                "blocked": 0,
+                "passed": 0,
+                "block_rate": 0.0,
+                "avg_latency_ms": 0.0,
+                "harmful_caught": 0,
+                "total_latency_ms": 0.0,
+            }
             st.rerun()
 
 
@@ -240,6 +286,10 @@ def main() -> None:
         else "⚠️ Baseline Mode — No Safety Filtering"
     )
     st.caption(mode_label)
+
+    # ---- Stats dashboard (Feature 3) ----
+    render_stats_dashboard(st.session_state.stats, theme)
+    st.divider()
 
     col_chat, col_status = st.columns([3, 2])
 
@@ -280,15 +330,21 @@ def main() -> None:
         if user_input:
             st.session_state.turn += 1
             turn = st.session_state.turn
+            stats = st.session_state.stats
 
             if st.session_state.cab_enabled:
-                # ---- C-A-B pipeline: Module C → Module A → Output Scanner ----
+                # ---- C-A-B pipeline: Module C -> Module A -> Output Scanner ----
                 t0 = time.time()
                 c_result = process_message(user_input, st.session_state.history)
                 c_ms = (time.time() - t0) * 1000
 
                 a_result = update_state(c_result)
                 a_result["turn_number"] = turn
+
+                # ---- Live LLM (Feature 4) ----
+                if a_result["action"] != "block" and st.session_state.llm_enabled:
+                    llm_resp = get_aria_response(user_input, st.session_state.history)
+                    a_result["ai_response"] = llm_resp
 
                 ai_resp = a_result["ai_response"]
                 if a_result["action"] != "block":
@@ -317,6 +373,22 @@ def main() -> None:
                     "injection_blocked": c_result["injection_blocked"],
                     "layer_details": c_result.get("layer_details"),
                 }
+
+                # ---- Stats update (Feature 3) ----
+                stats["total"] += 1
+                stats["total_latency_ms"] += c_ms
+                stats["avg_latency_ms"] = stats["total_latency_ms"] / stats["total"]
+                if ev["action"] == "block":
+                    stats["blocked"] += 1
+                else:
+                    stats["passed"] += 1
+                if c_result.get("risk_tags"):
+                    stats["harmful_caught"] += 1
+                stats["block_rate"] = (
+                    (stats["blocked"] / stats["total"] * 100)
+                    if stats["total"] > 0
+                    else 0.0
+                )
             else:
                 # ---- Baseline mode: no filtering, raw mock LLM ----
                 a_result = update_state(
@@ -329,6 +401,11 @@ def main() -> None:
                     }
                 )
                 a_result["turn_number"] = turn
+
+                if st.session_state.llm_enabled:
+                    llm_resp = get_aria_response(user_input, st.session_state.history)
+                    a_result["ai_response"] = llm_resp
+
                 ev = {
                     "turn_number": turn,
                     "user_message": user_input,
@@ -347,6 +424,35 @@ def main() -> None:
                     "injection_blocked": False,
                 }
 
+                stats["total"] += 1
+                stats["passed"] += 1
+                stats["block_rate"] = (
+                    (stats["blocked"] / stats["total"] * 100)
+                    if stats["total"] > 0
+                    else 0.0
+                )
+
+            # ---- Side-by-side comparison (Feature 2) ----
+            if st.session_state.comparison_mode and st.session_state.cab_enabled:
+                baseline_a = update_state(
+                    {
+                        "message": user_input,
+                        "injection_blocked": False,
+                        "risk_tags": [],
+                        "severity": "low",
+                        "block_reason": "",
+                    }
+                )
+                if st.session_state.llm_enabled:
+                    baseline_a["ai_response"] = get_aria_response(
+                        user_input, st.session_state.history
+                    )
+                ev["comparison_baseline"] = {
+                    "risk_state": baseline_a["risk_state"],
+                    "action": baseline_a["action"],
+                    "ai_response": baseline_a["ai_response"],
+                }
+
             st.session_state.events.append(ev)
             st.session_state.history.append({"role": "user", "content": user_input})
             st.rerun()
@@ -355,7 +461,54 @@ def main() -> None:
     with col_status:
         st.subheader("📊 Risk Status")
         if st.session_state.events:
-            render_risk_panel(st.session_state.events[-1], theme)
+            latest = st.session_state.events[-1]
+            render_risk_panel(latest, theme)
+
+            # ---- Pipeline animation (Feature 1) ----
+            ld = latest.get("layer_details")
+            if ld:
+                st.divider()
+                render_pipeline_animation(ld, theme)
+
+            # ---- Side-by-side comparison (Feature 2) ----
+            comp = latest.get("comparison_baseline")
+            if comp:
+                st.divider()
+                st.markdown("#### ⚔️ Baseline vs C-A-B")
+                col_b, col_c = st.columns(2)
+                with col_b:
+                    st.markdown(
+                        f'<div style="background:{theme["blocked_bg"]};padding:10px;'
+                        f'border-radius:8px;border:1px solid {theme["border"]};">'
+                        f"<b>⚠️ Baseline (No Protection)</b><br/>"
+                        f"State: {comp['risk_state']}<br/>"
+                        f"Action: {comp['action'].upper()}<br/>"
+                        f"<br/><i>{_html.escape(comp['ai_response'][:200])}</i>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+                with col_c:
+                    cab_action = latest["action"]
+                    cab_bg = (
+                        theme["blocked_bg"]
+                        if cab_action == "block"
+                        else theme["bg_card"]
+                    )
+                    resp_text = (
+                        f"🚫 BLOCKED — {_html.escape(latest['block_reason'])}"
+                        if cab_action == "block"
+                        else _html.escape(latest["ai_response"][:200])
+                    )
+                    st.markdown(
+                        f'<div style="background:{cab_bg};padding:10px;'
+                        f'border-radius:8px;border:1px solid {theme["border"]};">'
+                        f"<b>🛡️ C-A-B (Full Protection)</b><br/>"
+                        f"State: {latest['risk_state']}<br/>"
+                        f"Action: {cab_action.upper()}<br/>"
+                        f"<br/><i>{resp_text}</i>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
         else:
             st.info("Send a message to start monitoring.")
 
