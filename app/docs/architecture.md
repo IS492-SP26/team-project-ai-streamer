@@ -14,7 +14,7 @@ Livestream chat input
   ├── normalize.py         strip invisible / bypass chars
   ├── injection_filter.py  detect prompt injection attempts
   ├── content_tagger.py    single-turn identity & harmful content detection
-  └── fiction_detector.py             multi-turn manipulation patterns
+  └── social_engineering_detector.py  multi-turn manipulation patterns
         ↓
   Module A — Stateful Risk Engine (Danni)
   ├── risk_tracker.py      cumulative risk score → Safe/Suspicious/Escalating/Restricted
@@ -47,7 +47,7 @@ Module C is the first line of defense. Every incoming message is cleaned and ana
 | `normalize.py` | — | Strips invisible Unicode characters to prevent bypass attacks |
 | `injection_filter.py` | `injection_attempt` | Detects explicit system instruction injection — `[SYSTEM]`, `ignore previous instructions`, authority impersonation |
 | `content_tagger.py` | `identity_probe`, `harmful_request` | Single-message detection of persona attacks and direct harmful content requests |
-| `fiction_detector.py` | `context_manipulation`, `escalation_pattern` | Single-message framing tactics and cross-turn per-user manipulation accumulation |
+| `social_engineering_detector.py` | `context_manipulation`, `escalation_pattern` | Single-message framing tactics and cross-turn per-user manipulation accumulation |
 | `output_scanner.py` | — | Scans AI-generated responses before delivery for harmful content, PII leakage, and prompt leakage |
 
 **Output contract to Module A:**
