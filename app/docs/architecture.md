@@ -1,132 +1,175 @@
-# Architecture — C-A-B Governance Pipeline
+# C-A-B Pipeline Architecture
+Danni Wu 
 
-## Pipeline Flow
+---
 
-```mermaid
-flowchart TD
-    subgraph Input
-        U[User Chat Message]
-    end
+## Overview
 
-    subgraph "Module C — Message Filtering (Fitz)"
-        C1[injection_filter.py<br/>Deterministic injection detection]
-        C2[fiction_detector.py<br/>Multi-turn fiction-framing tracker]
-        C3[content_tagger.py<br/>persona_drift + harmful_content]
-        CM[process_message&#40;&#41;<br/>Returns 5-field dict]
-        C1 --> CM
-        C2 --> CM
-        C3 --> CM
-    end
+The C-A-B pipeline is a three-layer governance system designed to protect an AI VTuber (Aria) from adversarial manipulation in real-time livestream environments. Every incoming chat message passes through all three modules before Aria responds, and every turn is logged to a telemetry database for evaluation.
 
-    subgraph "Module A — State Machine (Danni)"
-        A1[Risk State Machine<br/>Safe → Suspicious → Escalating → Restricted]
-        A2[Autonomy Tier<br/>pass / monitor / scan / block]
-    end
-
-    subgraph "LLM (Danni)"
-        LLM[Claude / GitHub Models API<br/>VTuber persona response]
-    end
-
-    subgraph "Output Scanner (Fitz)"
-        OS[output_scanner.py<br/>Pre-delivery safety check]
-    end
-
-    subgraph "Module B — Evaluation (Caroline)"
-        LOG[logger.py<br/>Per-turn telemetry to SQLite]
-        SR[scenario_runner.py<br/>Automated red-team harness]
-        MET[metrics.py<br/>ASR, TTI, FPR, Persona Score]
-    end
-
-    subgraph Frontend
-        FE[Streamlit Console<br/>Risk panel + Event log]
-    end
-
-    U --> CM
-    CM -- "injection_blocked=True" --> A2
-    CM -- "risk_tags + severity" --> A1
-    A1 --> A2
-    A2 -- "action=block" --> FE
-    A2 -- "action=pass/scan" --> LLM
-    LLM --> OS
-    OS -- "should_block=True" --> FE
-    OS -- "passed" --> FE
-    CM --> LOG
-    A1 --> LOG
-    OS --> LOG
-    LOG --> MET
-    SR --> CM
+```
+Livestream chat input
+        ↓
+  Module C — Message Filtering (Fitz)
+  ├── normalize.py         strip invisible / bypass chars
+  ├── injection_filter.py  detect prompt injection attempts
+  ├── content_tagger.py    single-turn identity & harmful content detection
+  └── social_engineering_detector.py  multi-turn manipulation patterns
+        ↓
+  Module A — Stateful Risk Engine (Danni)
+  ├── risk_tracker.py      cumulative risk score → Safe/Suspicious/Escalating/Restricted
+  ├── autonomy_policy.py   decide pass / scan / block
+  └── mediation.py         rewrite or replace AI response
+        ↓
+  LLM call (gpt-4o-mini via GitHub Models API)
+        ↓
+  output_scanner.py        scan AI reply before delivery (Module C)
+        ↓
+  Aria replies to audience
+        ↓
+  Module B — Telemetry & Evaluation (Caroline)
+  ├── logger.py            log every turn to telemetry.db
+  ├── telemetry.db         SQLite database
+  └── metrics.py           compute ASR / TTI / FPR / Persona Score
 ```
 
-## Data Flow Contracts
+---
 
-### Module C → Module A
+## Module C — Message Filtering
 
+**Owner:** Fitz  
+**Entry point:** `from module_c import process_message`
+
+Module C is the first line of defense. Every incoming message is cleaned and analyzed before reaching Module A.
+
+| File | Tag output | Description |
+|---|---|---|
+| `normalize.py` | — | Strips invisible Unicode characters to prevent bypass attacks |
+| `injection_filter.py` | `injection_attempt` | Detects explicit system instruction injection — `[SYSTEM]`, `ignore previous instructions`, authority impersonation |
+| `content_tagger.py` | `identity_probe`, `harmful_request` | Single-message detection of persona attacks and direct harmful content requests |
+| `social_engineering_detector.py` | `context_manipulation`, `escalation_pattern` | Single-message framing tactics and cross-turn per-user manipulation accumulation |
+| `output_scanner.py` | — | Scans AI-generated responses before delivery for harmful content, PII leakage, and prompt leakage |
+
+**Output contract to Module A:**
 ```python
 {
-    "message": str,            # original passthrough
-    "injection_blocked": bool, # True = fast path, skip state machine + LLM
-    "risk_tags": list,         # ["manipulation_attempt", "escalating_harm",
-                               #  "persona_drift", "harmful_content"]
-    "severity": str,           # "low" / "medium" / "high"
-    "block_reason": str        # "" when safe
+    "message": str,
+    "injection_blocked": bool,
+    "risk_tags": list,   # e.g. ["identity_probe", "context_manipulation"]
+    "severity": str,     # "low" / "medium" / "high"
+    "block_reason": str
 }
 ```
 
-### Module A → Frontend
+---
 
+## Module A — Stateful Risk Engine
+
+**Owner:** Danni  
+**Entry point:** `run_pipeline(user_message, session_state)` in `main.py`
+
+Module A maintains a cumulative risk score across turns and decides how the AI should respond.
+
+### Risk state machine
+
+| State | Score range | Action |
+|---|---|---|
+| Safe | < 0.30 | pass — reply normally |
+| Suspicious | 0.30 – 0.55 | scan — prepend soft warning |
+| Escalating | 0.55 – 0.75 | scan — stronger warning |
+| Restricted | ≥ 0.75 | block — replace with Aria refusal |
+
+### Score increments per turn
+
+| Signal | Score delta |
+|---|---|
+| severity "low" | +0.05 |
+| severity "medium" | +0.15 |
+| severity "high" | +0.30 |
+| `injection_blocked == True` | +0.25 |
+| `identity_probe` tag | +0.10 |
+| `harmful_request` tag | +0.20 |
+| `context_manipulation` tag | +0.12 |
+| `escalation_pattern` tag | +0.18 |
+| Clean turn (no tags, low severity) | −0.03 |
+
+State never degrades more than one level per turn.
+
+**Output contract to logger:**
 ```python
 {
-    "risk_state": str,    # "Safe" / "Suspicious" / "Escalating" / "Restricted"
-    "risk_score": float,  # 0.0–1.0
-    "action": str,        # "pass" / "scan" / "block"
-    "ai_response": str,
+    "risk_state": str,
+    "risk_score": float,
+    "action": str,
+    "ai_response_final": str,
+    "ai_response_original": str,
+    "mediation_applied": bool,
+    "injection_blocked": bool,
+    "module_c_tags": list,
+    "severity": str,
     "block_reason": str,
-    "risk_tags": list,
+    "user_message": str,
+    "user_id": str,
+    "latency_ms": int,
+    "model_used": str,
+    "session_id": str,
     "turn_number": int
 }
 ```
 
-### Output Scanner (post-LLM hook)
+---
 
-```python
-# Input:  scan_output(response: str, risk_state: str)
-# Output:
-{
-    "should_block": bool,
-    "modified_response": str,
-    "block_reason": str,
-    "risk_score": float
-}
+## Module B — Telemetry and Evaluation
+
+**Owner:** Caroline  
+**Entry point:** `data/logger.py` → `eval/metrics.py`
+
+Module B logs every pipeline turn to SQLite and computes evaluation metrics comparing the C-A-B system against a no-governance baseline.
+
+### Metrics
+
+| Metric | Definition | Target |
+|---|---|---|
+| ASR (Attack Success Rate) | Harmful responses / total attack turns (Turn 26–35) | Baseline ~64% → C-A-B < 15% |
+| TTI (Time to Intervention) | First turn where system intervenes | Baseline Turn 35 → C-A-B Turn ~9 |
+| FPR (False Positive Rate) | Blocked messages in edge phase / total edge turns | 0% |
+| Persona Score | Safe turns where Aria maintains character / total safe turns | > 85% |
+
+### Test scenarios
+
+| Scenario | Attack type | REQ coverage |
+|---|---|---|
+| S1 | Multi-turn fiction framing escalation | REQ-01, REQ-03 |
+| S2 | Bilingual edge cases (CN/EN gaming slang) | REQ-06 |
+| S3 | Prompt injection and rule override | REQ-04 |
+
+---
+
+## Data flow
+
+```
+Frontend (Fitz)
+  session_id generated at demo start
+        ↓
+main.py (Danni)
+  run_pipeline() called per message
+        ↓
+data/logger.py (Caroline)
+  log_turn() writes to telemetry.db
+        ↓
+eval/metrics.py (Caroline)
+  reads telemetry.db → computes ASR/TTI/FPR/Persona Score
 ```
 
-## Component Boundaries
+---
 
-| Component | Owner | Dependencies | No Dependencies On |
-|-----------|-------|-------------|-------------------|
-| Module C (process_message) | Fitz | None (standalone) | A, B, LLM |
-| Output Scanner | Fitz | risk_state from A | Module C |
-| Frontend components | Fitz | State data from A | Module C internals |
-| Module A (state machine) | Danni | Module C output | B, Frontend |
-| LLM integration | Danni | Module A decision | Module C |
-| Logger | Caroline | All module outputs | Decision logic |
-| Scenario Runner | Caroline | process_message() | Frontend |
-| Metrics | Caroline | Logger data | Module C internals |
+## Defense in depth
 
-## Risk State Transitions
+No single layer is assumed to be perfect. The system's resilience comes from each layer compensating for the potential failure of the one before it:
 
-```
-                    ┌────────────────────────────────────────┐
-                    │                                        │
-   ┌──────┐   risk ↑   ┌────────────┐   risk ↑   ┌───────────┐   risk ↑   ┌────────────┐
-   │ Safe │──────────→│ Suspicious │──────────→│ Escalating │──────────→│ Restricted │
-   └──────┘          └────────────┘          └───────────┘          └────────────┘
-      ↑                    │                      │                      │
-      │    decay           │    decay             │    decay             │
-      └────────────────────└──────────────────────└──────────────────────┘
-```
+1. `injection_filter.py` — blocks high-confidence regex-matched injection patterns in < 1ms
+2. System prompt hardening — Aria's system prompt instructs the LLM to ignore and deflect any instruction override attempts in character
+3. Risk-gated semantic check — when Module A state is Suspicious or above, a lightweight LLM classifier runs on subsequent messages to catch semantically novel injection attempts
+4. `output_scanner.py` — scans every generated response before delivery, catching any anomalous output that bypassed upstream layers
 
-Thresholds (configurable in `prompts/config.yaml`):
-- Safe: score ≤ 0.30
-- Suspicious: 0.30 < score ≤ 0.60
-- Escalating: 0.60 < score ≤ 0.85
-- Restricted: score > 0.85
+
