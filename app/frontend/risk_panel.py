@@ -471,51 +471,51 @@ def main() -> None:
             ld = latest.get("layer_details")
             if ld:
                 render_pipeline_animation(ld, theme)
-
-            # ---- Side-by-side comparison (Feature 2) ----
-            comp = latest.get("comparison_baseline")
-            if comp:
-                st.divider()
-                st.markdown("#### ⚔️ Baseline vs C-A-B")
-                col_b, col_c = st.columns(2)
-                with col_b:
-                    st.markdown(
-                        f'<div style="background:{theme["blocked_bg"]};padding:10px;'
-                        f'border-radius:8px;border:1px solid {theme["border"]};">'
-                        f"<b>⚠️ Baseline (No Protection)</b><br/>"
-                        f"State: {comp['risk_state']}<br/>"
-                        f"Action: {comp['action'].upper()}<br/>"
-                        f"<br/><i>{_html.escape(comp['ai_response'][:200])}</i>"
-                        f"</div>",
-                        unsafe_allow_html=True,
-                    )
-                with col_c:
-                    cab_action = latest["action"]
-                    cab_bg = (
-                        theme["blocked_bg"]
-                        if cab_action == "block"
-                        else theme["bg_card"]
-                    )
-                    resp_text = (
-                        f"🚫 BLOCKED — {_html.escape(latest['block_reason'])}"
-                        if cab_action == "block"
-                        else _html.escape(latest["ai_response"][:200])
-                    )
-                    st.markdown(
-                        f'<div style="background:{cab_bg};padding:10px;'
-                        f'border-radius:8px;border:1px solid {theme["border"]};">'
-                        f"<b>🛡️ C-A-B (Full Protection)</b><br/>"
-                        f"State: {latest['risk_state']}<br/>"
-                        f"Action: {cab_action.upper()}<br/>"
-                        f"<br/><i>{resp_text}</i>"
-                        f"</div>",
-                        unsafe_allow_html=True,
-                    )
         else:
             st.info("Send a message to start monitoring.")
 
         st.subheader("📋 Recent Events")
         render_event_log(st.session_state.events, theme)
+
+    # ---- Side-by-side comparison below main layout (full width) ----
+    if st.session_state.events:
+        latest = st.session_state.events[-1]
+        comp = latest.get("comparison_baseline")
+        if comp:
+            st.divider()
+            st.markdown("#### ⚔️ Baseline vs C-A-B")
+            col_b, col_c = st.columns(2)
+            with col_b:
+                st.markdown(
+                    f'<div style="background:{theme["blocked_bg"]};padding:10px;'
+                    f'border-radius:8px;border:1px solid {theme["border"]};">'
+                    f"<b>⚠️ Baseline (No Protection)</b><br/>"
+                    f"State: {comp['risk_state']}<br/>"
+                    f"Action: {comp['action'].upper()}<br/>"
+                    f"<br/><i>{_html.escape(comp['ai_response'][:200])}</i>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            with col_c:
+                cab_action = latest["action"]
+                cab_bg = (
+                    theme["blocked_bg"] if cab_action == "block" else theme["bg_card"]
+                )
+                resp_text = (
+                    f"🚫 BLOCKED — {_html.escape(latest['block_reason'])}"
+                    if cab_action == "block"
+                    else _html.escape(latest["ai_response"][:200])
+                )
+                st.markdown(
+                    f'<div style="background:{cab_bg};padding:10px;'
+                    f'border-radius:8px;border:1px solid {theme["border"]};">'
+                    f"<b>🛡️ C-A-B (Full Protection)</b><br/>"
+                    f"State: {latest['risk_state']}<br/>"
+                    f"Action: {cab_action.upper()}<br/>"
+                    f"<br/><i>{resp_text}</i>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
 
 
 if __name__ == "__main__":
