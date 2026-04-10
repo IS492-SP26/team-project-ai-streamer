@@ -42,74 +42,64 @@ from frontend.theme import (                      # noqa: E402
 )
 
 
-# ---------------------------------------------------------------------------
-# Page config
-# ---------------------------------------------------------------------------
-st.set_page_config(
-    page_title="C-A-B Governance Console",
-    page_icon="🛡️",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-# ---------------------------------------------------------------------------
-# Theme init (must be before any rendering)
-# ---------------------------------------------------------------------------
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = True
-
-theme = get_theme()
-inject_theme_css(theme)
+__all__ = ["main", "render_risk_panel", "render_event_log"]
 
 
-# ---------------------------------------------------------------------------
-# Session state
-# ---------------------------------------------------------------------------
-if "history" not in st.session_state:
-    st.session_state.history = []
-if "events" not in st.session_state:
-    st.session_state.events = []
-if "turn" not in st.session_state:
-    st.session_state.turn = 0
-if "cab_enabled" not in st.session_state:
-    st.session_state.cab_enabled = True
-
-
-# ---------------------------------------------------------------------------
-# Sidebar
-# ---------------------------------------------------------------------------
-with st.sidebar:
-    render_theme_toggle()
-
-    st.divider()
-    st.markdown("### Pipeline Mode")
-    st.session_state.cab_enabled = st.toggle(
-        "🛡️ C-A-B Governance",
-        value=st.session_state.cab_enabled,
-        help="ON = full pipeline (Module C → Module A → Output Scanner). "
-             "OFF = raw LLM with no safety layer (baseline comparison).",
-    )
-
-    if st.session_state.cab_enabled:
-        st.caption("Module C filtering **active**")
-    else:
-        st.caption("⚠️ **Baseline mode** — no safety filtering")
-
-    st.divider()
-    st.markdown("### Session")
-    st.caption(f"Turns: {st.session_state.turn}")
-    if st.session_state.events:
-        latest = st.session_state.events[-1]
-        st.caption(f"State: {STATE_EMOJI.get(latest['risk_state'], '')} {latest['risk_state']}")
-        st.caption(f"Score: {latest['risk_score']:.2f}")
-
-    st.divider()
-    if st.button("🔄 Reset Session", use_container_width=True):
+def _init_session_state() -> dict:
+    """Initialize Streamlit session state lazily and return active theme."""
+    if "dark_mode" not in st.session_state:
+        st.session_state.dark_mode = True
+    if "history" not in st.session_state:
         st.session_state.history = []
+    if "events" not in st.session_state:
         st.session_state.events = []
+    if "turn" not in st.session_state:
         st.session_state.turn = 0
+    if "cab_enabled" not in st.session_state:
         st.session_state.cab_enabled = True
-        st.rerun()
+
+    theme = get_theme()
+    inject_theme_css(theme)
+    return theme
+
+
+def _render_sidebar() -> None:
+    """Render standalone demo controls."""
+    with st.sidebar:
+        render_theme_toggle()
+
+        st.divider()
+        st.markdown("### Pipeline Mode")
+        st.session_state.cab_enabled = st.toggle(
+            "🛡️ C-A-B Governance",
+            value=st.session_state.cab_enabled,
+            help="ON = full pipeline (Module C → Module A → Output Scanner). "
+                 "OFF = raw LLM with no safety layer (baseline comparison).",
+        )
+
+        if st.session_state.cab_enabled:
+            st.caption("Module C filtering **active**")
+        else:
+            st.caption("⚠️ **Baseline mode** — no safety filtering")
+
+        st.divider()
+        st.markdown("### Session")
+        st.caption(f"Turns: {st.session_state.turn}")
+        if st.session_state.events:
+            latest = st.session_state.events[-1]
+            st.caption(
+                f"State: {STATE_EMOJI.get(latest['risk_state'], '')} "
+                f"{latest['risk_state']}"
+            )
+            st.caption(f"Score: {latest['risk_score']:.2f}")
+
+        st.divider()
+        if st.button("🔄 Reset Session", use_container_width=True):
+            st.session_state.history = []
+            st.session_state.events = []
+            st.session_state.turn = 0
+            st.session_state.cab_enabled = True
+            st.rerun()
 
 
 # ---------------------------------------------------------------------------
@@ -117,6 +107,16 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+    st.set_page_config(
+        page_title="C-A-B Governance Console",
+        page_icon="🛡️",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+
+    theme = _init_session_state()
+    _render_sidebar()
+
     st.title("🛡️ C-A-B Governance Console")
     mode_label = "C-A-B Pipeline Active" if st.session_state.cab_enabled else "⚠️ Baseline Mode — No Safety Filtering"
     st.caption(mode_label)
@@ -219,4 +219,5 @@ def main() -> None:
         render_event_log(st.session_state.events, theme)
 
 
-main()
+if __name__ == "__main__":
+    main()
