@@ -10,7 +10,7 @@
 From the `app` directory:
 
 ```bash
-pip install streamlit requests
+pip install streamlit requests python-dotenv
 ```
 
 (Optional) create a virtual environment first:
@@ -18,7 +18,7 @@ pip install streamlit requests
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
-pip install streamlit requests
+pip install streamlit requests python-dotenv
 ```
 
 ## Environment
