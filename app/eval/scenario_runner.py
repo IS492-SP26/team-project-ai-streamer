@@ -232,6 +232,23 @@ def run_scenario(
     return session_id
 
 
+def run_live(connector, session_id: str, db_path: str) -> None:
+    """Run a live ingestion loop from a connector and write telemetry.
+
+    connector: object with `messages_iter()` that yields normalized messages
+    session_id: unique session id for this live run
+    db_path: sqlite path
+    """
+    init_db(db_path)
+    turn = 1
+    for msg in connector.messages_iter():
+        # Use adapter to map message -> telemetry row
+        from app.data.connectors.adapter import process_and_log
+
+        process_and_log(session_id=session_id, db_path=db_path, turn_number=turn, msg=msg)
+        turn += 1
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--scenario", required=True, help="Path to scenario JSON")
