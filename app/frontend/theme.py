@@ -4,7 +4,7 @@ theme.py — Dark/Light theme system for C-A-B governance UI.
 Usage:
     from frontend.theme import get_theme, inject_theme_css
 
-    theme = get_theme()              # reads st.session_state.dark_mode
+    theme = get_theme()              # syncs with Streamlit native theme
     inject_theme_css(theme)          # injects CSS into the page
     theme["state_colors"]["Safe"]    # use in components
 """
@@ -85,9 +85,28 @@ STATE_EMOJI = {
 }
 
 
+def _is_dark_mode() -> bool:
+    """Detect whether Streamlit's native theme is dark.
+
+    Checks ``st.get_option("theme.base")`` which reflects the user's
+    choice in the hamburger menu (System / Light / Dark).  Falls back
+    to *dark* when no explicit setting exists.
+    """
+    try:
+        base = st.get_option("theme.base")
+    except Exception:
+        base = None
+    if base == "light":
+        return False
+    if base == "dark":
+        return True
+    # "System" or unset — default to dark
+    return True
+
+
 def get_theme() -> Dict:
-    """Return current theme based on session state."""
-    if st.session_state.get("dark_mode", True):
+    """Return current theme synced with Streamlit's native theme selector."""
+    if _is_dark_mode():
         return DARK_THEME
     return LIGHT_THEME
 

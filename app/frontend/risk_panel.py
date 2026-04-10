@@ -1,14 +1,10 @@
 """
 risk_panel.py — Standalone Streamlit demo for Module C + Mock Module A.
 
-Supports dark/light mode toggle via sidebar.
+Theme syncs with Streamlit's native System/Light/Dark selector (hamburger menu).
 
 Launch from repo root:
     streamlit run app/frontend/risk_panel.py
-
-For Week 2 integration, import the reusable pieces instead:
-    from frontend.components import render_risk_panel, render_event_log
-    from frontend.theme import get_theme, inject_theme_css, render_theme_toggle
 """
 
 from __future__ import annotations
@@ -43,7 +39,6 @@ from frontend.llm_caller import get_aria_response, is_llm_available  # noqa: E40
 from frontend.theme import (  # noqa: E402
     get_theme,
     inject_theme_css,
-    render_theme_toggle,
     STATE_EMOJI,
 )
 
@@ -53,8 +48,6 @@ __all__ = ["main", "render_risk_panel", "render_event_log"]
 
 def _init_session_state() -> dict:
     """Initialize Streamlit session state lazily and return active theme."""
-    if "dark_mode" not in st.session_state:
-        st.session_state.dark_mode = True
     if "history" not in st.session_state:
         st.session_state.history = []
     if "events" not in st.session_state:
@@ -86,9 +79,6 @@ def _init_session_state() -> dict:
 def _render_sidebar() -> None:
     """Render standalone demo controls."""
     with st.sidebar:
-        render_theme_toggle()
-
-        st.divider()
         st.markdown("### Pipeline Mode")
         st.session_state.cab_enabled = st.toggle(
             "🛡️ C-A-B Governance",
