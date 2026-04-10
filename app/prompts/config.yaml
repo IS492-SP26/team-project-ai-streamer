@@ -42,12 +42,24 @@ state_machine:
 
 # --- Module C: Detection Settings ---
 module_c:
-  # fiction_detector tuning
   fiction_detector:
     history_window: 15
     decay_factor: 0.85
     threshold_medium: 2.5
     threshold_high: 5.0
+
+  semantic_analyzer:
+    confidence_high: 0.75
+    confidence_medium: 0.40
+    confidence_low: 0.15
+
+# --- Layer 2: LLM Guard ---
+llm_guard:
+  enabled: false
+  model: "gpt-4o-mini"
+  endpoint: "https://models.inference.ai.azure.com/chat/completions"
+  timeout_seconds: 10
+  max_tokens: 100
 
 # --- Output Scanner ---
 output_scanner:
