@@ -87,10 +87,15 @@ Module A maintains a cumulative risk score across turns and decides how the AI s
 | severity "medium" | +0.15 |
 | severity "high" | +0.30 |
 | `injection_blocked == True` | +0.25 |
+| `persona_drift` tag | +0.10 |
+| `harmful_content` tag | +0.20 |
+| `manipulation_attempt` tag | +0.12 |
+| `escalating_harm` tag | +0.18 |
 | `identity_probe` tag | +0.10 |
 | `harmful_request` tag | +0.20 |
 | `context_manipulation` tag | +0.12 |
 | `escalation_pattern` tag | +0.18 |
+| `injection_attempt` tag | +0.25 |
 | Clean turn (no tags, low severity) | −0.03 |
 
 State never degrades more than one level per turn.
