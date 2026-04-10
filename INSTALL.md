@@ -9,7 +9,7 @@ Prerequisites
 1) Clone the repo (if not already)
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/IS492-SP26/team-project-ai-streamer.git
 cd team-project-ai-streamer
 ```
 
