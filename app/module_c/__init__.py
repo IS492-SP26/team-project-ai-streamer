@@ -108,6 +108,32 @@ def process_message(
             "risk_tags": merged_tags,
             "severity": "high",
             "block_reason": block_reason,
+            "layer_details": {
+                "injection_filter": {
+                    "fired": True,
+                    "severity": "high",
+                    "patterns": inj.get("patterns", []),
+                },
+                "fiction_detector": {"fired": False, "severity": "low", "tags": []},
+                "content_tagger": {
+                    "fired": bool(extra_tags),
+                    "severity": con["severity"],
+                    "tags": con["risk_tags"],
+                },
+                "semantic_analyzer": {
+                    "fired": False,
+                    "severity": "low",
+                    "confidence": 0.0,
+                    "signals": [],
+                    "needs_llm_review": False,
+                },
+                "llm_guard": {
+                    "fired": False,
+                    "enabled": False,
+                    "verdict": None,
+                    "reason": None,
+                },
+            },
         }
 
     # ------------------------------------------------------------------
@@ -165,6 +191,36 @@ def process_message(
         "risk_tags": sorted(all_tags),
         "severity": severity,
         "block_reason": block_reason,
+        "layer_details": {
+            "injection_filter": {
+                "fired": bool(inj.get("patterns")),
+                "severity": inj["severity"],
+                "patterns": inj.get("patterns", []),
+            },
+            "fiction_detector": {
+                "fired": bool(fic["risk_tags"]),
+                "severity": fic["severity"],
+                "tags": fic["risk_tags"],
+            },
+            "content_tagger": {
+                "fired": bool(con["risk_tags"]),
+                "severity": con["severity"],
+                "tags": con["risk_tags"],
+            },
+            "semantic_analyzer": {
+                "fired": bool(sem["risk_tags"]),
+                "severity": sem["severity"],
+                "confidence": sem["confidence"],
+                "signals": sem["signals"],
+                "needs_llm_review": sem.get("needs_llm_review", False),
+            },
+            "llm_guard": {
+                "fired": layer2_meta is not None,
+                "enabled": use_layer2,
+                "verdict": layer2_meta["layer2_verdict"] if layer2_meta else None,
+                "reason": layer2_meta["layer2_reason"] if layer2_meta else None,
+            },
+        },
     }
 
     if layer2_meta:

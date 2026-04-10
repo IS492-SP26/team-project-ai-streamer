@@ -28,6 +28,7 @@ from frontend.theme import LIGHT_THEME, STATE_EMOJI
 # render_risk_panel
 # ---------------------------------------------------------------------------
 
+
 def render_risk_panel(state_data: Dict, theme: Optional[Dict] = None) -> None:
     """
     Display current risk status with theme support.
@@ -47,8 +48,8 @@ def render_risk_panel(state_data: Dict, theme: Optional[Dict] = None) -> None:
     # State pill — uses theme-aware class
     st.markdown(
         f'<div class="cab-state-pill" style="background:{color};">'
-        f'{emoji} {state} — Score: {score:.2f}'
-        f'</div>',
+        f"{emoji} {state} — Score: {score:.2f}"
+        f"</div>",
         unsafe_allow_html=True,
     )
 
@@ -85,10 +86,88 @@ def render_risk_panel(state_data: Dict, theme: Optional[Dict] = None) -> None:
             unsafe_allow_html=True,
         )
 
+    # Multi-layer breakdown
+    layer_details = state_data.get("layer_details")
+    if layer_details:
+        render_layer_breakdown(layer_details, theme)
+
+
+# ---------------------------------------------------------------------------
+# render_layer_breakdown
+# ---------------------------------------------------------------------------
+
+_LAYER_DISPLAY = [
+    ("injection_filter", "Injection Filter", "⚡"),
+    ("fiction_detector", "Fiction Detector", "📖"),
+    ("content_tagger", "Content Tagger", "🏷️"),
+    ("semantic_analyzer", "Semantic Analyzer", "🧠"),
+    ("llm_guard", "LLM Guard (L2)", "🤖"),
+]
+
+_SEVERITY_COLOR = {"high": "#ef4444", "medium": "#f59e0b", "low": "#22c55e"}
+
+
+def render_layer_breakdown(layer_details: Dict, theme: Optional[Dict] = None) -> None:
+    if theme is None:
+        theme = LIGHT_THEME
+
+    st.markdown("**Multi-Layer Interception:**")
+
+    for key, label, icon in _LAYER_DISPLAY:
+        layer = layer_details.get(key)
+        if not layer:
+            continue
+
+        fired = layer.get("fired", False)
+        sev = layer.get("severity", "low")
+
+        if key == "llm_guard":
+            if not layer.get("enabled", False):
+                status_html = (
+                    f'<span style="color:{theme["text_secondary"]};">— disabled</span>'
+                )
+            elif fired:
+                verdict = layer.get("verdict", "?")
+                status_html = (
+                    f'<span style="color:#ef4444;font-weight:bold;">🔴 {verdict}</span>'
+                )
+            else:
+                status_html = f'<span style="color:{theme["text_secondary"]};">— not needed</span>'
+        elif fired:
+            color = _SEVERITY_COLOR.get(sev, "#666")
+            status_html = (
+                f'<span style="color:{color};font-weight:bold;">● {sev.upper()}</span>'
+            )
+        else:
+            status_html = f'<span style="color:#22c55e;">✓ clear</span>'
+
+        st.markdown(
+            f"{icon} **{label}** {status_html}",
+            unsafe_allow_html=True,
+        )
+
+        if fired and key == "semantic_analyzer":
+            conf = layer.get("confidence", 0)
+            signals = layer.get("signals", [])
+            if signals:
+                sig_html = ", ".join(f"`{s}`" for s in signals)
+                st.markdown(
+                    f"&nbsp;&nbsp;&nbsp;&nbsp;Confidence: **{conf:.2f}** — Signals: {sig_html}"
+                )
+            if layer.get("needs_llm_review"):
+                st.markdown("&nbsp;&nbsp;&nbsp;&nbsp;→ *Flagged for LLM review*")
+
+        if fired and key == "injection_filter":
+            patterns = layer.get("patterns", [])
+            if patterns:
+                pat_str = ", ".join(f"`{p}`" for p in patterns[:3])
+                st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;Patterns: {pat_str}")
+
 
 # ---------------------------------------------------------------------------
 # render_event_log
 # ---------------------------------------------------------------------------
+
 
 def render_event_log(
     events: List[Dict],
@@ -123,7 +202,7 @@ def render_event_log(
             with col_s:
                 st.markdown(
                     f'<span style="color:{state_color};font-weight:bold;">'
-                    f'Score: {ev.get("risk_score", 0):.2f}</span>',
+                    f"Score: {ev.get('risk_score', 0):.2f}</span>",
                     unsafe_allow_html=True,
                 )
             with col_a:
