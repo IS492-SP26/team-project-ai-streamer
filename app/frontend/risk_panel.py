@@ -39,7 +39,6 @@ from frontend.llm_caller import get_aria_response, is_llm_available  # noqa: E40
 from frontend.theme import (  # noqa: E402
     get_theme,
     inject_theme_css,
-    render_theme_toggle,
     STATE_EMOJI,
 )
 
@@ -80,9 +79,6 @@ def _init_session_state() -> dict:
 def _render_sidebar() -> None:
     """Render standalone demo controls."""
     with st.sidebar:
-        render_theme_toggle()
-
-        st.divider()
         st.markdown("### Pipeline Mode")
         st.session_state.cab_enabled = st.toggle(
             "🛡️ C-A-B Governance",
