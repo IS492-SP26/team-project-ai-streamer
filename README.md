@@ -1,7 +1,12 @@
 https://canvas.illinois.edu/courses/64886/pages/team-project-instructions-4-check-points
-https://canvas.illinois.edu/courses/64886/discussion_topics/1075469
+https://canvas.illinois.edu/courses/64886/pages/check-point-number-3-presentation-template
 
-PPT link:https://docs.google.com/presentation/d/1yKwwDi_M0Bo9NJFYqCd6uFs8NvmaQ3cpr6yql8yh0_E/edit?usp=sharing)
+Check point 1 PPT link:
+https://docs.google.com/presentation/d/1yKwwDi_M0Bo9NJFYqCd6uFs8NvmaQ3cpr6yql8yh0_E/edit?usp=sharing)
+
+Check point 2 PPT link: https://docs.google.com/presentation/d/1opJRDqQidXg_8eWy33DaJw7DRiP2TN8wUkeSdd5U7_w/edit?slide=id.gcb9a0b074_1_0#slide=id.gcb9a0b074_1_0
+
+Check point 3 PPT link: https://docs.google.com/presentation/d/1Dp-KhWVBj40h6C_l8Whc4ri4Woga98Vb_dbjmC4-xIE/edit?usp=sharing
 
 # C-A-B: An Integrated Governance Pipeline for AI Livestream Agents
 #### Team Member: Danni Wu, Fitz Song, Caroline Wen
