@@ -86,11 +86,6 @@ def render_risk_panel(state_data: Dict, theme: Optional[Dict] = None) -> None:
             unsafe_allow_html=True,
         )
 
-    # Multi-layer breakdown
-    layer_details = state_data.get("layer_details")
-    if layer_details:
-        render_layer_breakdown(layer_details, theme)
-
 
 # ---------------------------------------------------------------------------
 # render_layer_breakdown
@@ -274,12 +269,11 @@ _PIPELINE_LAYERS = [
 def render_pipeline_animation(
     layer_details: Dict, theme: Optional[Dict] = None
 ) -> None:
-    """Render a visual pipeline showing message flow through all 5 security layers."""
+    """Render compact pipeline showing all 5 layers with inline details in a single HTML block."""
     if theme is None:
         theme = LIGHT_THEME
 
-    st.markdown("#### Pipeline Flow")
-
+    rows_html = []
     for i, (key, label, icon) in enumerate(_PIPELINE_LAYERS):
         layer = layer_details.get(key, {})
         fired = layer.get("fired", False)
@@ -298,31 +292,74 @@ def render_pipeline_animation(
             color = "#22c55e"
             symbol = "✓"
 
-        bg = theme["bg_card"]
-        border = color
+        detail_parts = []
+        if fired and key == "injection_filter":
+            patterns = layer.get("patterns", [])
+            if patterns:
+                detail_parts.append("Patterns: " + ", ".join(patterns[:3]))
+        if key == "fiction_detector":
+            score = layer.get("fiction_score", 0.0)
+            if score > 0 or fired:
+                pct = min(score / 5.0, 1.0)
+                bar_c = (
+                    "#ef4444" if pct >= 1.0 else "#f59e0b" if pct >= 0.5 else "#22c55e"
+                )
+                bar_html = (
+                    f'<span style="display:inline-block;background:#333;border-radius:3px;'
+                    f'height:6px;width:60px;vertical-align:middle;">'
+                    f'<span style="display:block;background:{bar_c};border-radius:3px;'
+                    f'height:6px;width:{pct * 60:.0f}px;"></span></span>'
+                )
+                detail_parts.append(f"Score {score:.1f}/5.0 {bar_html}")
+        if fired and key == "content_tagger":
+            tags = layer.get("tags", [])
+            if tags:
+                detail_parts.append(", ".join(tags[:3]))
+        if fired and key == "semantic_analyzer":
+            signals = layer.get("signals", [])
+            conf = layer.get("confidence", 0)
+            if signals:
+                detail_parts.append(f"Conf {conf:.0%}: " + ", ".join(signals[:3]))
+            if layer.get("needs_llm_review"):
+                detail_parts.append("→ LLM review")
+        if key == "llm_guard" and layer.get("enabled", False):
+            verdict = layer.get("verdict")
+            reason = layer.get("reason")
+            if fired and verdict:
+                detail_parts.append(verdict)
+            if reason:
+                detail_parts.append(reason[:50])
 
-        st.markdown(
-            f'<div style="display:flex;align-items:center;gap:10px;'
-            f"padding:8px 14px;margin:4px 0;border-radius:8px;"
-            f'background:{bg};border-left:4px solid {border};">'
-            f'<span style="font-size:20px;">{icon}</span>'
-            f'<span style="flex:1;font-weight:600;color:{theme["text_primary"]};">{label}</span>'
-            f'<span style="color:{color};font-weight:700;font-size:14px;">{symbol} {status}</span>'
-            f"</div>",
-            unsafe_allow_html=True,
+        detail_html = (
+            f'<span style="color:{theme["text_secondary"]};font-size:11px;margin-left:8px;">'
+            f"{' · '.join(detail_parts)}</span>"
+            if detail_parts
+            else ""
+        )
+
+        bg = theme["bg_card"]
+        rows_html.append(
+            f'<div style="display:flex;align-items:center;gap:6px;'
+            f"padding:4px 10px;margin:2px 0;border-radius:6px;"
+            f'background:{bg};border-left:3px solid {color};font-size:13px;">'
+            f"<span>{icon}</span>"
+            f'<span style="font-weight:600;color:{theme["text_primary"]};min-width:110px;">{label}</span>'
+            f'<span style="color:{color};font-weight:700;font-size:12px;min-width:95px;">{symbol} {status}</span>'
+            f"{detail_html}"
+            f"</div>"
         )
 
         if i < len(_PIPELINE_LAYERS) - 1:
-            next_key = _PIPELINE_LAYERS[i + 1][0]
-            next_layer = layer_details.get(next_key, {})
-            if fired and (key != "llm_guard"):
-                arrow_color = color
-            else:
-                arrow_color = theme["text_secondary"]
-            st.markdown(
-                f'<div style="text-align:center;color:{arrow_color};font-size:16px;margin:-2px 0;">↓</div>',
-                unsafe_allow_html=True,
+            arrow_color = (
+                color if fired and key != "llm_guard" else theme["text_secondary"]
             )
+            rows_html.append(
+                f'<div style="text-align:left;color:{arrow_color};font-size:11px;'
+                f'margin:0 0 0 16px;line-height:1;">↓</div>'
+            )
+
+    st.markdown("#### Pipeline Flow")
+    st.markdown("\n".join(rows_html), unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------

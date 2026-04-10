@@ -468,10 +468,8 @@ def main() -> None:
             latest = st.session_state.events[-1]
             render_risk_panel(latest, theme)
 
-            # ---- Pipeline animation (Feature 1) ----
             ld = latest.get("layer_details")
             if ld:
-                st.divider()
                 render_pipeline_animation(ld, theme)
 
             # ---- Side-by-side comparison (Feature 2) ----
