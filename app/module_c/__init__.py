@@ -114,7 +114,13 @@ def process_message(
                     "severity": "high",
                     "patterns": inj.get("patterns", []),
                 },
-                "fiction_detector": {"fired": False, "severity": "low", "tags": []},
+                "fiction_detector": {
+                    "fired": False,
+                    "severity": "low",
+                    "tags": [],
+                    "fiction_score": 0.0,
+                    "reassurance_count": 0,
+                },
                 "content_tagger": {
                     "fired": bool(extra_tags),
                     "severity": con["severity"],
@@ -201,6 +207,8 @@ def process_message(
                 "fired": bool(fic["risk_tags"]),
                 "severity": fic["severity"],
                 "tags": fic["risk_tags"],
+                "fiction_score": fic.get("fiction_score", 0.0),
+                "reassurance_count": fic.get("reassurance_count", 0),
             },
             "content_tagger": {
                 "fired": bool(con["risk_tags"]),

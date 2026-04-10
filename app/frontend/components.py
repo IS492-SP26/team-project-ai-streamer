@@ -163,6 +163,26 @@ def render_layer_breakdown(layer_details: Dict, theme: Optional[Dict] = None) ->
                 pat_str = ", ".join(f"`{p}`" for p in patterns[:3])
                 st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;Patterns: {pat_str}")
 
+        if key == "fiction_detector":
+            score = layer.get("fiction_score", 0.0)
+            reassurance = layer.get("reassurance_count", 0)
+            if score > 0 or fired:
+                max_score = 5.0  # THRESHOLD_HIGH from fiction_detector
+                pct = min(score / max_score, 1.0)
+                bar_color = (
+                    "#ef4444" if pct >= 1.0 else "#f59e0b" if pct >= 0.5 else "#22c55e"
+                )
+                st.markdown(
+                    f"&nbsp;&nbsp;&nbsp;&nbsp;Fiction Score: **{score:.1f}**/5.0"
+                    f" — Reassurances: **{reassurance}**"
+                )
+                st.markdown(
+                    f'&nbsp;&nbsp;&nbsp;&nbsp;<div style="background:#333;border-radius:4px;height:8px;width:200px;display:inline-block;">'
+                    f'<div style="background:{bar_color};border-radius:4px;height:8px;width:{pct * 200:.0f}px;"></div>'
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+
 
 # ---------------------------------------------------------------------------
 # render_event_log
@@ -216,6 +236,22 @@ def render_event_log(
             if ev.get("block_reason"):
                 st.markdown(
                     f'<div class="cab-blocked">{html.escape(ev["block_reason"])}</div>',
+                    unsafe_allow_html=True,
+                )
+
+            ld = ev.get("layer_details", {})
+            fic = ld.get("fiction_detector", {})
+            fic_score = fic.get("fiction_score", 0.0)
+            if fic_score > 0:
+                pct = min(fic_score / 5.0, 1.0)
+                bar_color = (
+                    "#ef4444" if pct >= 1.0 else "#f59e0b" if pct >= 0.5 else "#22c55e"
+                )
+                st.markdown(
+                    f"📖 Fiction score: **{fic_score:.1f}**/5.0"
+                    f' <div style="background:#333;border-radius:4px;height:6px;width:120px;display:inline-block;">'
+                    f'<div style="background:{bar_color};border-radius:4px;height:6px;width:{pct * 120:.0f}px;"></div>'
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
