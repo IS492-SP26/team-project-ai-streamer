@@ -8,6 +8,7 @@ Check point 2 PPT link: https://docs.google.com/presentation/d/1opJRDqQidXg_8eWy
 
 Check point 3 PPT link: https://docs.google.com/presentation/d/1Dp-KhWVBj40h6C_l8Whc4ri4Woga98Vb_dbjmC4-xIE/edit?usp=sharing
 
+Check Point 4 slide: https://docs.google.com/presentation/d/1ZoqdPgXmnYjZu7TMIrj5Pnzgn2Bq7XZJCV09OxyMgbo/edit?usp=sharing
 https://canvas.illinois.edu/courses/64886/pages/checkpoint-number-4-presentation-template
 
 # C-A-B: An Integrated Governance Pipeline for AI Livestream Agents
