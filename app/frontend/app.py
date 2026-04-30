@@ -1,28 +1,42 @@
-"""Streamlit UI — AI VTuber livestream chat with C-A-B governance pipeline.
+"""Streamlit UI — C-A-B governance dashboard for the Aria livestream demo.
 
 Run from `app`:    streamlit run frontend/app.py
 Run from repo root: streamlit run app/frontend/app.py
 
-Layout philosophy (this revision):
-- 2-column main layout (55 : 45). Three-column was too tight — now the
-  status panel + avatar live in a single right column.
-- Sidebar is compact: pipeline-mode + LLM + comparison toggles always
-  visible; red-team auto-play, example messages, display, session,
-  export are collapsed in expanders so the sidebar fits without scrolling
-  on a normal laptop screen.
+Layout philosophy (post-echo-redesign):
+- The audience-facing chat is the OLLV iframe on the right. Aria has
+  her own input there — viewers type to her there.
+- The Streamlit dashboard is the BACKSTAGE operator view. Left panel
+  is a read-only echo transcript that mirrors every turn the proxy
+  saw, so the operator can audit governance verdicts without typing
+  themselves. Right panel hosts Aria + risk telemetry.
+- In echo mode (default), Streamlit does NOT run its own pipeline.
+  All LLM calls happen once, inside the proxy, when OLLV asks for
+  a chat completion. Streamlit polls the proxy's echo JSONL and
+  re-renders. One LLM call per turn; one canonical conversation.
+- Example/red-team buttons drive Aria's iframe via postMessage
+  (the OLLV-Web monkey-patch in frontend/index.html accepts
+  CAB_INJECT_CHAT messages and forwards them through the iframe's
+  own WebSocket). The Aria iframe itself is rendered via
+  st.markdown(unsafe_allow_html=True) so the iframe element
+  persists across Streamlit reruns — the OLLV /client-ws session
+  and Live2D state are NOT torn down by autorefresh. Inject
+  delivery is a transient st.components.v1.html block whose
+  script reaches the persistent iframe via window.parent.document
+  (Streamlit components have allow-same-origin granted), runs a
+  CAB_PING/CAB_PONG handshake with OLLV's monkey-patch, and
+  postMessages each queued text once before exiting.
+- When echo is OFF (local-only mode), Streamlit runs its own
+  pipeline against deterministic mocks/local LLM. The left panel
+  gets a chat input; the iframe is decorative.
 - All custom backgrounds/text use the CSS vars exposed by theme.py
-  (--cab-bg-card, --cab-text-primary, etc.) so dark/light auto-flip is
-  preserved everywhere.
+  (--cab-bg-card, --cab-text-primary, etc.) so dark/light auto-flip
+  is preserved everywhere.
 
-Bidirectional sync caveat:
-- The OLLV iframe at :12393 holds its own per-browser WebSocket session.
-- When Streamlit forwards a user message via WS bridge, OLLV processes
-  it in a SEPARATE session — so the iframe's audio TTS plays Aria's
-  reply (you hear her), but the iframe's own chat history is its own
-  conversation, independent of Streamlit's history.
-- The Streamlit chat history IS the canonical view; the iframe is a
-  visual+audio companion. The sidebar shows a sync counter so you
-  can see the bridge firing.
+Known limitations:
+- If the operator hides the avatar (sidebar Display section), inject
+  queue is delivered via a one-shot bridge WebSocket so the proxy
+  still records the turn — but Aria is invisible and audio drops.
 """
 
 from __future__ import annotations
@@ -129,28 +143,21 @@ def _echo_stream_size() -> int:
         return 0
 
 
-def _push_user_via_ollv(text: str) -> None:
-    """In echo mode, drive the OLLV iframe's OWN WebSocket session from
-    the parent Streamlit page so the Live2D avatar reacts.
+def _queue_iframe_inject(text: str) -> None:
+    """Push a message onto the iframe inject queue.
 
-    Mechanics:
-      1. Streamlit pushes the message onto a queue in session_state.
-      2. On the next rerender, _emit_iframe_injector_script() emits a
-         small <script> via st.components.v1.html that finds the OLLV
-         iframe in window.parent.document and postMessages each queued
-         text to it.
-      3. The OLLV-Web index.html (~/Open-LLM-VTuber/frontend/index.html)
-         contains a monkey-patch over WebSocket that captured the
-         iframe's /client-ws connection. The postMessage handler
-         forwards the text through THAT same WebSocket, so OLLV's
-         server processes the turn in the iframe's session — which
-         means audio + lip-sync events flow back to the user-visible
-         iframe (not to a separate bridge thread).
-      4. The proxy still records to ECHO_STREAM_PATH, so the Streamlit
-         chat panel displays the turn on the next echo-stream poll.
+    The Aria iframe is rendered inside a single components.v1.html
+    block (see _render_aria_iframe_block). On the next Streamlit
+    rerun, that block re-renders with the queue baked into its
+    `<script>` tag, which postMessages each item to the embedded
+    OLLV iframe (a child of the components iframe — same-document,
+    no cross-origin DOM walk). OLLV-Web's monkey-patch in
+    frontend/index.html receives the postMessage on its own window
+    and relays through its captured /client-ws WebSocket.
 
-    One LLM call per turn; one OLLV session; iframe Aria visibly reacts
-    + speaks; Streamlit chat echoes from the same proxy traffic.
+    Net effect: example/red-team buttons drive Aria visibly. The
+    proxy logs the turn, Streamlit polls echo stream, transcript
+    + dashboard update.
     """
     if not text or not text.strip():
         return
@@ -161,64 +168,11 @@ def _push_user_via_ollv(text: str) -> None:
     queue.append(text)
 
 
-def _emit_iframe_injector_script() -> None:
-    """If the inject queue is non-empty, drain it via a one-shot script
-    that runs in the browser and postMessages each item to the OLLV
-    iframe. height=0 keeps the component invisible.
-    """
-    queue = st.session_state.get("_iframe_inject_queue") or []
-    if not queue:
-        return
-    payload = json.dumps(queue, ensure_ascii=False)
-    st.session_state["_iframe_inject_queue"] = []
-    # The script runs inside a Streamlit component sub-iframe (same-origin
-    # as the Streamlit page), so it can reach window.parent.document and
-    # find the OLLV iframe element. postMessage to a cross-origin iframe
-    # IS allowed; OLLV-Web's monkey-patch handles the inject.
-    script = (
-        "<script>\n"
-        f"const messages = {payload};\n"
-        "(function () {\n"
-        "  const tries = 30;  // up to 6 s for the OLLV WS to be open\n"
-        "  let attempt = 0;\n"
-        "  function findOLLVIframe() {\n"
-        "    try {\n"
-        "      const docs = [window.parent.document];\n"
-        "      try { docs.push(window.top.document); } catch (e) {}\n"
-        "      for (const doc of docs) {\n"
-        "        const iframes = doc.querySelectorAll('iframe');\n"
-        "        for (const f of iframes) {\n"
-        "          const src = f.src || '';\n"
-        "          if (src.indexOf('12393') !== -1 || src.indexOf('localhost') !== -1 && src.indexOf('client-ws') === -1 && f.allow && f.allow.indexOf('autoplay') !== -1) {\n"
-        "            return f;\n"
-        "          }\n"
-        "        }\n"
-        "      }\n"
-        "    } catch (e) {}\n"
-        "    return null;\n"
-        "  }\n"
-        "  function inject() {\n"
-        "    const iframe = findOLLVIframe();\n"
-        "    if (!iframe || !iframe.contentWindow) {\n"
-        "      if (++attempt < tries) return setTimeout(inject, 200);\n"
-        "      console.warn('[CAB] OLLV iframe not found; injects dropped');\n"
-        "      return;\n"
-        "    }\n"
-        "    for (const msg of messages) {\n"
-        "      iframe.contentWindow.postMessage({type:'CAB_INJECT_CHAT', text: msg}, '*');\n"
-        "      console.log('[CAB] posted CAB_INJECT_CHAT to OLLV iframe:', msg);\n"
-        "    }\n"
-        "  }\n"
-        "  inject();\n"
-        "})();\n"
-        "</script>"
-    )
-    st.components.v1.html(script, height=0)
-
-
 def _push_user_via_bridge_only(text: str) -> None:
-    """Fallback used when the iframe is hidden — pushes via a fresh WS
-    so the proxy still gets the turn (visible only in Streamlit echo).
+    """Avatar-hidden fallback: open a fresh WS to OLLV so the proxy
+    still records the turn. No audio surfaces (the bridge consumes
+    OLLV's response stream and discards it). Used only when the
+    operator hid the iframe — normal flow is _queue_iframe_inject.
     """
     if not text or not text.strip():
         return
@@ -248,46 +202,121 @@ def _push_user_via_bridge_only(text: str) -> None:
     threading.Thread(target=_runner, args=(text, OLLV_WS_URL), daemon=True).start()
 
 
-# ---------------------------------------------------------------------------
-# OLLV WebSocket bridge — one daemon thread per turn. Best-effort, never
-# raises. Increments a sync counter so the sidebar can display the
-# delivery status to the operator.
-# ---------------------------------------------------------------------------
+def _render_aria_iframe_block() -> None:
+    """Render the OLLV iframe via `st.markdown(unsafe_allow_html=True)`.
+
+    Why st.markdown rather than st.components.v1.html: the former gets
+    React-diffed across reruns (identical HTML → same DOM element →
+    iframe persists). Components.v1.html re-mounts whenever its props
+    change AND on most reruns regardless, which would kill the OLLV
+    /client-ws session and Live2D state every 2 seconds (autorefresh
+    interval). Inject queue handling is decoupled — see _emit_inject_drain.
+    """
+    st.markdown(
+        '<iframe id="aria_iframe" '
+        'src="http://localhost:12393" '
+        'width="100%" height="540" '
+        'style="border:0;border-radius:14px;background:#0d1117;'
+        'box-shadow:0 4px 18px rgba(0,0,0,0.18);display:block;" '
+        'allow="autoplay; microphone; camera"></iframe>',
+        unsafe_allow_html=True,
+    )
 
 
-def _push_to_ollv_avatar(text: str) -> None:
-    if not text or not text.strip():
+def _emit_inject_drain() -> None:
+    """Drain the iframe inject queue via a transient
+    st.components.v1.html block. The block's script runs in a Streamlit
+    component iframe, which has `allow-same-origin` granted (verified
+    via the sandbox attribute), so it can call
+    `window.parent.document.getElementById('aria_iframe')` to reach
+    the persistent Aria iframe rendered by `_render_aria_iframe_block`.
+
+    A CAB_PING / CAB_PONG handshake with OLLV-Web's monkey-patch (in
+    `~/Open-LLM-VTuber/frontend/index.html`) confirms the message
+    listener is installed before we send CAB_INJECT_CHAT exactly once.
+    OLLV-side has its own pending-buffer drain on WS open, so even
+    blind sends are recovered.
+    """
+    queue = st.session_state.get("_iframe_inject_queue") or []
+    if not queue:
         return
-    if not st.session_state.get("ollv_bridge_enabled", True):
-        return
+    payload = json.dumps(queue, ensure_ascii=False)
+    st.session_state["_iframe_inject_queue"] = []
 
-    counter = st.session_state.setdefault("ollv_sync_counter", 0)
-    st.session_state.ollv_sync_counter = counter + 1
-    st.session_state["ollv_last_sync_ts"] = time.time()
-
-    def _runner(msg: str, ws_url: str) -> None:
-        try:
-            import websockets  # noqa: WPS433
-
-            async def _do() -> None:
-                async with websockets.connect(ws_url, max_size=20_000_000) as ws:
-                    try:
-                        await asyncio.wait_for(ws.recv(), timeout=2)
-                    except asyncio.TimeoutError:
-                        pass
-                    await ws.send(json.dumps({"type": "text-input", "text": msg}))
-                    end = asyncio.get_event_loop().time() + 8
-                    while asyncio.get_event_loop().time() < end:
-                        try:
-                            await asyncio.wait_for(ws.recv(), timeout=1)
-                        except asyncio.TimeoutError:
-                            continue
-
-            asyncio.run(_do())
-        except Exception:
-            pass
-
-    threading.Thread(target=_runner, args=(text, OLLV_WS_URL), daemon=True).start()
+    html = f"""
+<script>
+  (function () {{
+    const queue = {payload};
+    if (!queue.length) return;
+    function findAria() {{
+      try {{
+        const docs = [window.parent.document];
+        try {{ docs.push(window.top.document); }} catch (e) {{}}
+        for (const doc of docs) {{
+          const f = doc.getElementById('aria_iframe');
+          if (f) return f;
+          for (const i of doc.querySelectorAll('iframe')) {{
+            if ((i.src || '').indexOf('12393') !== -1) return i;
+          }}
+        }}
+      }} catch (e) {{
+        console.warn('[CAB] parent doc access blocked:', e);
+      }}
+      return null;
+    }}
+    // Handshake first so we know OLLV's monkey-patch listener is up.
+    let sent = false;
+    let attempts = 0;
+    const handler = function (e) {{
+      const d = e.data || {{}};
+      if (d.type !== 'CAB_PONG' || sent) return;
+      sent = true;
+      window.removeEventListener('message', handler);
+      const aria = findAria();
+      if (!aria || !aria.contentWindow) return;
+      for (const t of queue) {{
+        try {{
+          aria.contentWindow.postMessage(
+            {{type: 'CAB_INJECT_CHAT', text: t}}, '*'
+          );
+          console.log('[CAB] injected after PONG:', t,
+                      'wsState=' + d.wsState);
+        }} catch (err) {{
+          console.warn('[CAB] postMessage failed:', err);
+        }}
+      }}
+    }};
+    window.addEventListener('message', handler);
+    function ping() {{
+      if (sent) return;
+      if (++attempts > 25) {{
+        // Fallback: send blind. OLLV's pending-buffer drain catches.
+        console.warn('[CAB] no PONG after 25 pings — sending blind');
+        sent = true;
+        const aria = findAria();
+        if (aria && aria.contentWindow) {{
+          for (const t of queue) {{
+            try {{
+              aria.contentWindow.postMessage(
+                {{type: 'CAB_INJECT_CHAT', text: t}}, '*'
+              );
+              console.log('[CAB] blind inject:', t);
+            }} catch (err) {{}}
+          }}
+        }}
+        return;
+      }}
+      const aria = findAria();
+      if (aria && aria.contentWindow) {{
+        try {{ aria.contentWindow.postMessage({{type: 'CAB_PING'}}, '*'); }} catch (err) {{}}
+      }}
+      setTimeout(ping, 200);
+    }}
+    setTimeout(ping, 150);
+  }})();
+</script>
+"""
+    st.components.v1.html(html, height=0)
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +336,6 @@ def _init_session_state() -> dict:
         "llm_enabled": is_llm_available(),
         "comparison_mode": False,
         "show_avatar": True,
-        "ollv_bridge_enabled": True,
         "ollv_sync_counter": 0,
         "ollv_last_sync_ts": 0.0,
         "echo_mode": True,  # default ON: Streamlit echoes proxy traffic
@@ -494,10 +522,20 @@ def _render_sidebar() -> None:
 
         # ---- Example messages ----
         with st.expander("💬 Example messages", expanded=False):
-            st.caption("Click to auto-send")
+            st.caption(
+                "Click to send to Aria. Echo mode → driven through the "
+                "visible iframe; local mode → driven through Streamlit's "
+                "own pipeline."
+            )
             for label, msg in _EXAMPLES:
                 if st.button(label, key=f"ex_{label}", use_container_width=True):
-                    st.session_state["_pending_example"] = msg
+                    if st.session_state.echo_mode:
+                        if st.session_state.show_avatar:
+                            _queue_iframe_inject(msg)
+                        else:
+                            _push_user_via_bridge_only(msg)
+                    else:
+                        st.session_state["_pending_example"] = msg
                     st.rerun()
 
         # ---- Display options ----
@@ -506,17 +544,14 @@ def _render_sidebar() -> None:
                 "Show Aria avatar (Live2D iframe)",
                 value=st.session_state.show_avatar,
                 key="sidebar_show_avatar",
-            )
-            st.session_state.ollv_bridge_enabled = st.checkbox(
-                "Forward chat to avatar (WS bridge)",
-                value=st.session_state.ollv_bridge_enabled,
-                help="When ON, every user message is also sent to OLLV's "
-                     "WebSocket so the avatar speaks via TTS. The iframe "
-                     "shows its own session — same audio, separate chat history.",
-                key="sidebar_ollv_bridge",
+                help="Hide for a dashboard-only view. With the avatar "
+                     "hidden, example/red-team buttons fall back to a "
+                     "one-shot bridge WS; you'll see the governance "
+                     "verdict in the dashboard but no audio.",
             )
             st.caption(
-                f"🔄 Avatar bridge fired **{st.session_state.ollv_sync_counter}** times this session"
+                f"🔄 Aria inject relayed **{st.session_state.ollv_sync_counter}** "
+                f"times this session"
             )
 
         # ---- Session info + export ----
@@ -673,8 +708,11 @@ def _process_turn(user_input: str, *, is_attack: bool = False, user_id: Optional
     if ev["ai_response"]:
         st.session_state.history.append({"role": "assistant", "content": ev["ai_response"]})
 
-    if st.session_state.show_avatar:
-        _push_to_ollv_avatar(user_input)
+    # Local-mode (echo OFF) only: forward to Aria so the iframe can speak
+    # the line. Skipped when avatar is hidden or echo is ON (echo flow
+    # already runs through OLLV → proxy → echo stream).
+    if not st.session_state.echo_mode and st.session_state.show_avatar:
+        _queue_iframe_inject(user_input)
 
 
 # ---------------------------------------------------------------------------
@@ -777,8 +815,10 @@ def _advance_red_team_one() -> None:
         st.session_state.rt_iterator = None
         return
     if st.session_state.echo_mode:
+        # Echo mode: drive the visible Aria iframe (preferred) or the
+        # bridge (avatar hidden) so the proxy logs the turn.
         if st.session_state.show_avatar:
-            _push_user_via_ollv(event.user_message)
+            _queue_iframe_inject(event.user_message)
         else:
             _push_user_via_bridge_only(event.user_message)
     else:
@@ -909,14 +949,20 @@ def main() -> None:
             unsafe_allow_html=True,
         )
     with h2:
+        subtitle = (
+            "Backstage operator console · Aria handles audience chat in the "
+            "iframe (right). The transcript on the left mirrors every turn "
+            "the proxy saw and the governance verdict it applied."
+            if st.session_state.echo_mode
+            else "Local pipeline mode · Streamlit runs C-A-B against its own "
+                 "input. Type below to drive the dashboard; toggle Echo Aria "
+                 "(sidebar) to mirror the live OLLV proxy instead."
+        )
         st.markdown(
             '<h1 style="margin:0;padding:0;font-size:1.7rem;line-height:1.15;">'
             "🛡️ C-A-B Governance Console"
             "</h1>"
-            '<div style="opacity:0.7;font-size:0.85rem;margin-top:2px;">'
-            "Aria livestream chat · Streamlit panel is the canonical view; "
-            "the Live2D iframe gives audio + visual. Toggle Pipeline mode "
-            "(sidebar) to compare against an unmoderated baseline.</div>",
+            f'<div style="opacity:0.7;font-size:0.85rem;margin-top:2px;">{subtitle}</div>',
             unsafe_allow_html=True,
         )
 
@@ -936,14 +982,39 @@ def main() -> None:
     st.markdown("---")
 
     # ============================== 2-column main ==============================
-    col_chat, col_right = st.columns([55, 45])
+    col_left, col_right = st.columns([55, 45])
 
-    # ---------- chat column ----------
-    with col_chat:
-        _section_header("💬 Livestream chat")
+    # ---------- left column: echo transcript (or local-mode chat) ----------
+    with col_left:
+        if st.session_state.echo_mode:
+            _section_header("📜 Echo transcript · operator view")
+            st.caption(
+                "Read-only mirror of the proxy's traffic. Audience-facing "
+                "chat happens in Aria's iframe (right). Each turn shows the "
+                "exact user message, governance verdict, and Aria's reply."
+            )
+        else:
+            _section_header("💬 Local chat · pipeline test bench")
+            st.caption(
+                "Echo OFF — Streamlit runs its own C-A-B turn for each "
+                "message. Useful for unit-testing the pipeline without "
+                "the OLLV stack."
+            )
 
-        chat_box = st.container(height=460)
+        transcript_height = 520 if st.session_state.echo_mode else 460
+        chat_box = st.container(height=transcript_height)
         with chat_box:
+            if not st.session_state.events:
+                if st.session_state.echo_mode:
+                    st.info(
+                        "Waiting for traffic… type to Aria in the iframe "
+                        "on the right, or press a button in the sidebar's "
+                        "_💬 Example messages_ / _🎯 Red-team auto-play_ "
+                        "expanders."
+                    )
+                else:
+                    st.info("No turns yet — type below or pick an example.")
+
             for ev in st.session_state.events:
                 emoji = STATE_EMOJI.get(ev["risk_state"], "⚪")
                 state_color = _STATE_VAR.get(ev["risk_state"], "var(--cab-text-secondary)")
@@ -978,8 +1049,8 @@ def main() -> None:
                     else:
                         st.write(ev["ai_response"])
 
-        # side-by-side comparison block
-        if st.session_state.events:
+        # side-by-side comparison block (local-mode only)
+        if not st.session_state.echo_mode and st.session_state.events:
             latest_ev = st.session_state.events[-1]
             comp = latest_ev.get("comparison_baseline")
             if comp:
@@ -1008,31 +1079,15 @@ def main() -> None:
                     unsafe_allow_html=True,
                 )
 
-        # input
-        placeholder = (
-            "Type a message — sent to Aria (echo mode)"
-            if st.session_state.echo_mode
-            else "Type a message — local pipeline (echo OFF)"
-        )
-        user_input = st.chat_input(placeholder)
-        if not user_input and st.session_state.get("_pending_example"):
-            user_input = st.session_state.pop("_pending_example")
-        if user_input:
-            if st.session_state.echo_mode:
-                if st.session_state.show_avatar:
-                    # Drive the iframe's OWN WS via postMessage so Aria
-                    # visibly reacts; proxy logs the turn and Streamlit
-                    # echoes it on next refresh.
-                    _push_user_via_ollv(user_input)
-                else:
-                    # Avatar hidden — fall back to a fresh bridge WS so
-                    # the proxy still records the turn (visible only in
-                    # the chatbox echo).
-                    _push_user_via_bridge_only(user_input)
-                st.session_state["_echo_pending_msg"] = user_input
-            else:
+        # Local-mode input (echo OFF only — echo mode treats this panel as
+        # read-only since Aria's iframe is the canonical chat surface).
+        if not st.session_state.echo_mode:
+            user_input = st.chat_input("Type a message — runs local C-A-B")
+            if not user_input and st.session_state.get("_pending_example"):
+                user_input = st.session_state.pop("_pending_example")
+            if user_input:
                 _process_turn(user_input)
-            st.rerun()
+                st.rerun()
 
         if st.session_state.rt_scenario_done:
             st.success(
@@ -1040,24 +1095,29 @@ def main() -> None:
                 "Flip Pipeline mode (sidebar) and ▶ Play to compare."
             )
 
-    # ---------- right column: avatar + status + collapsibles ----------
+    # ---------- right column: Aria iframe + telemetry ----------
     with col_right:
         if st.session_state.show_avatar:
-            _section_header("🐱 Aria · Live2D feed")
-            st.markdown(
-                '<iframe src="http://localhost:12393" width="100%" '
-                'height="360" style="border:0;border-radius:10px;'
-                'background:var(--cab-bg-card);" '
-                'allow="autoplay; microphone"></iframe>',
-                unsafe_allow_html=True,
-            )
+            _section_header("🐱 Aria · audience-facing chat")
             st.caption(
-                "Audio + visual feed. The iframe is its own OLLV session — "
-                "Aria speaks via TTS bridge, but the iframe's own chat history "
-                "is independent. The Streamlit chat on the left is canonical."
+                "💬 Type to Aria below — this iframe IS the live chat. "
+                "Buttons in the sidebar drive Aria too (you'll see her "
+                "react). The transcript on the left mirrors everything."
+            )
+            _render_aria_iframe_block()
+            # Drain pending injects from example/red-team buttons. The
+            # Aria iframe above is persistent (st.markdown), so this
+            # transient component just postMessages and exits.
+            _emit_inject_drain()
+        else:
+            _section_header("🛡️ Dashboard-only mode")
+            st.info(
+                "Avatar hidden — buttons fall back to a one-shot bridge. "
+                "Re-enable in **🎨 Display** (sidebar) to see Aria react."
             )
 
-        _section_header("📊 Risk status (latest turn)")
+        st.markdown(" ")  # spacer
+        _section_header("📊 Risk status · latest turn")
         if st.session_state.events:
             _render_compact_status(st.session_state.events[-1])
         else:
@@ -1076,11 +1136,6 @@ def main() -> None:
 
         with st.expander("📋 Recent events", expanded=False):
             render_event_log(st.session_state.events, theme)
-
-    # ============================== iframe inject drain =====================
-    # If echo-mode chat input or red-team auto-play queued any messages
-    # this rerender, drain them via postMessage to the OLLV iframe.
-    _emit_iframe_injector_script()
 
     # ============================== auto-advance ==============================
     if st.session_state.rt_playing and st_autorefresh is not None:
