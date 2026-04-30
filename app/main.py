@@ -37,13 +37,13 @@ from data.logger import init_db, log_turn
 # testing or to switch models without code changes.
 GITHUB_MODELS_URL = os.environ.get(
     "CAB_LIVE_LLM_URL",
-    "https://models.github.ai/inference/chat/completions",
+    "https://models.inference.ai.azure.com/chat/completions",
 )
-DEFAULT_MODEL = os.environ.get("CAB_LIVE_MODEL", "openai/gpt-4.1-mini")
+DEFAULT_MODEL = os.environ.get("CAB_LIVE_MODEL", "gpt-4o")
 _MODEL_FALLBACKS = [
     m.strip() for m in os.environ.get(
         "CAB_LIVE_MODEL_FALLBACKS",
-        "openai/gpt-4.1-mini,openai/gpt-4.1,openai/gpt-4o-mini,meta/llama-3.3-70b-instruct",
+        "gpt-4o,gpt-4o-mini,Meta-Llama-3.1-405B-Instruct",
     ).split(",") if m.strip()
 ]
 

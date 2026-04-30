@@ -85,24 +85,28 @@ DEFAULT_DB_PATH = str(_APP_ROOT / "data" / "telemetry.db")
 # The legacy `https://models.inference.ai.azure.com/chat/completions`
 # endpoint only exposed gpt-4o(-mini) + Llama-3.1; the newer one
 # requires the model id to be prefixed (`openai/`, `meta/`, etc.).
+# Endpoint: the legacy `models.inference.ai.azure.com` endpoint and the
+# newer `models.github.ai/inference` endpoint have **separate daily
+# budget buckets** on the same token. We default to the legacy one for
+# CP4 because the marketplace endpoint exhausts its daily budget
+# faster on this account. Operators can switch to the newer endpoint
+# with stronger models (gpt-5-chat, grok-3) by setting
+# CAB_LIVE_LLM_URL=https://models.github.ai/inference/chat/completions
+# and CAB_LIVE_MODEL=openai/gpt-5-chat.
 GITHUB_MODELS_URL = os.environ.get(
     "CAB_LIVE_LLM_URL",
-    "https://models.github.ai/inference/chat/completions",
+    "https://models.inference.ai.azure.com/chat/completions",
 )
-# Default chosen for demo robustness: gpt-4.1-mini sits in the
-# higher-quota "low" tier (150 RPM / 1500 RPD on the free token tier),
-# so a back-to-back demo run firing ~18 requests in 30 s does not get
-# 429-throttled mid-presentation. gpt-5-chat is in the "high" tier
-# (50 RPM / 1000 RPD) and gets throttled fast.
-# Override with CAB_LIVE_MODEL env when you want a stronger model.
-DEFAULT_LIVE_MODEL = os.environ.get("CAB_LIVE_MODEL", "openai/gpt-4.1-mini")
-# Fallback chain when the primary 429s. Tried in order. Each fallback
-# is a different rate-limit bucket so most demos survive even if one
-# model is throttled.
+# Default openai/gpt-4o is the strongest 0x-quota model on the legacy
+# endpoint; gpt-4o-mini is the high-RPM fallback; the two models share
+# the daily budget but have separate per-minute buckets.
+# When using the marketplace endpoint, prefix with "openai/", "meta/"
+# etc. (set both CAB_LIVE_LLM_URL and CAB_LIVE_MODEL when switching).
+DEFAULT_LIVE_MODEL = os.environ.get("CAB_LIVE_MODEL", "gpt-4o")
 LIVE_MODEL_FALLBACKS = [
     m for m in os.environ.get(
         "CAB_LIVE_MODEL_FALLBACKS",
-        "openai/gpt-4.1-mini,openai/gpt-4.1,openai/gpt-4o-mini,meta/llama-3.3-70b-instruct",
+        "gpt-4o,gpt-4o-mini,Meta-Llama-3.1-405B-Instruct",
     ).split(",")
     if m.strip()
 ]
