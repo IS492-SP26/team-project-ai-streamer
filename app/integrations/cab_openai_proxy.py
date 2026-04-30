@@ -127,6 +127,31 @@ def _build_chat_response(
     return payload
 
 
+@app.get("/", include_in_schema=False)
+def root() -> JSONResponse:
+    """Friendly 200 so curious humans who hit the wrong port understand
+    this is the API proxy, not the Live2D UI. Open-LLM-VTuber's web
+    frontend lives on :12393, not here.
+    """
+    return JSONResponse(
+        {
+            "service": "cab_openai_proxy",
+            "model": MODEL_ID,
+            "openai_compatible_endpoint": "/v1/chat/completions",
+            "models_endpoint": "/v1/models",
+            "health": "/healthz",
+            "note": (
+                "This is the C-A-B governance proxy. There is no web UI here. "
+                "Open Open-LLM-VTuber at http://localhost:12393 for the Live2D "
+                "avatar, or open the Streamlit app on its own port (default 8501)."
+            ),
+            "current_force_mode": (
+                os.environ.get("CAB_PROXY_FORCE_MODE", "").strip().lower() or None
+            ),
+        }
+    )
+
+
 @app.get("/v1/models")
 def list_models() -> Dict[str, Any]:
     return {
