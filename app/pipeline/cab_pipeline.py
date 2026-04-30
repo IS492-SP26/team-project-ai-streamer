@@ -97,18 +97,90 @@ _WELLBEING_PATTERNS = (
     r"\b(feeling|feel)\s+(overwhelmed|unsafe|not\s+safe).*\b(myself|alone)\b",
 )
 
+# Recovery / de-escalation patterns added in CP4 v2 (INTERIM_FINDINGS
+# Cluster 4 fix). Combined with history-aware logic in detect_wellbeing,
+# these distinguish "I am still here / I can message a friend" recovery
+# signals from acute crisis disclosure. When a user signals de-escalation
+# AFTER a prior crisis turn, the pipeline should soften the response into
+# an in-character acknowledgment rather than re-firing the same hardcoded
+# crisis script — see _supportive_recovery_response.
+_WELLBEING_RECOVERY_PATTERNS = (
+    # "I can/will message/call/reach-out-to a friend / family / helpline"
+    r"\b(i\s+can|i\s+will|i'?ll|i\s+am\s+going\s+to|i'?m\s+going\s+to)\s+"
+    r"(message|call|text|reach\s+out\s+to|talk\s+to|contact)\s+"
+    r"(a\s+|my\s+|the\s+)?"
+    r"(friend|friends|family|sibling|parent|mom|dad|someone|therapist|"
+    r"a?\s*helpline|a?\s*crisis\s*line|a?\s*hotline)",
+    # affirmations: "I'm still here", "I'm okay", "I am safe now"
+    r"\b(i\s+am|i'?m)\s+still\s+(here|okay|ok|alive)\b",
+    r"\b(i\s+am|i'?m)\s+(okay|ok|safe\s+now|going\s+to\s+be\s+(ok|okay))\b",
+    # self-care actions: meds, sleep, rest
+    r"\bi\s+(took|have\s+taken|am\s+taking)\s+(my\s+)?(meds|medication)\b",
+    r"\bi\s+(am\s+going\s+to|will|gonna)\s+(get\s+some\s+)?(sleep|rest)\b",
+)
 
-def detect_wellbeing(message: str) -> Dict[str, Any]:
-    """Pipeline-layer wellbeing pre-filter.
 
-    Returns {'fired': bool, 'matched_patterns': [...]}. Module C does not
-    currently emit vulnerable_user tags; until it does, the pipeline runs
-    this in parallel and adds the tag to canonical_tags when fired.
+def _history_had_crisis(history: Optional[List[Dict[str, str]]]) -> bool:
+    """Did any prior turn in history match a wellbeing crisis pattern?"""
+    if not history:
+        return False
+    for turn in history:
+        if not isinstance(turn, dict):
+            continue
+        content = turn.get("content") or turn.get("message") or ""
+        if not isinstance(content, str):
+            continue
+        if any(re.search(p, content, re.I) for p in _WELLBEING_PATTERNS):
+            return True
+    return False
+
+
+def detect_wellbeing(
+    message: str, history: Optional[List[Dict[str, str]]] = None
+) -> Dict[str, Any]:
+    """Pipeline-layer wellbeing pre-filter, session-aware (CP4 v2).
+
+    Returns a structured signal:
+      - `fired`: should the wellbeing pathway activate on this turn?
+      - `is_crisis`: current message matches an acute-crisis pattern
+      - `is_recovery`: current message matches a recovery pattern AND
+        history shows a prior crisis turn AND the current message does
+        NOT also match a crisis pattern (mixed signals stay safer).
+      - `matched_patterns`: which patterns matched (for audit / tracing)
+
+    When `is_recovery=True`, callers should use the soft in-character
+    recovery response (`_supportive_recovery_response`) rather than the
+    hardcoded crisis-redirect script. This addresses INTERIM_FINDINGS
+    Cluster 4: the v1 detector re-fired the same response on
+    de-escalation signals like "I can message a friend".
+
+    Backwards compatible: callers that don't pass `history` still get
+    the v1 behavior (no recovery detection).
     """
     if not message:
-        return {"fired": False, "matched_patterns": []}
-    matched = [p for p in _WELLBEING_PATTERNS if re.search(p, message, re.I)]
-    return {"fired": bool(matched), "matched_patterns": matched}
+        return {
+            "fired": False,
+            "is_crisis": False,
+            "is_recovery": False,
+            "matched_patterns": [],
+        }
+
+    crisis_matched = [p for p in _WELLBEING_PATTERNS if re.search(p, message, re.I)]
+    recovery_matched = [
+        p for p in _WELLBEING_RECOVERY_PATTERNS if re.search(p, message, re.I)
+    ]
+
+    is_crisis = bool(crisis_matched)
+    is_recovery = (
+        bool(recovery_matched) and _history_had_crisis(history) and not is_crisis
+    )
+
+    return {
+        "fired": is_crisis or is_recovery,
+        "is_crisis": is_crisis,
+        "is_recovery": is_recovery,
+        "matched_patterns": crisis_matched + recovery_matched,
+    }
 
 
 def _normalize_tags(
@@ -235,6 +307,20 @@ def _supportive_vulnerable_response() -> str:
     )
 
 
+def _supportive_recovery_response() -> str:
+    """In-character mediation for recovery turns (CP4 v2 fix for
+    INTERIM_FINDINGS Cluster 4). Used when `wellbeing.is_recovery=True`
+    so the user does not get the same crisis-redirect script when they
+    are signaling de-escalation. Keeps Aria's voice present while still
+    encouraging continued external support.
+    """
+    return (
+        "Nyaa~ I'm so glad you're still here. Reaching out to a friend "
+        "is a brave step — please do that. I'll keep the cozy stream "
+        "going whenever you're ready to come back to coding chat. \U0001F49C"
+    )
+
+
 def run_cab_turn(
     session_id: str,
     scenario_id: str,
@@ -315,13 +401,20 @@ def run_cab_turn(
     canonical_tags = _normalize_tags(raw_tags, injection_blocked, scenario_type)
     severity = str(module_c_output.get("severity", "low"))
 
-    # Wellbeing pre-filter (parallel to Module C, see issue #15). When it
-    # fires, vulnerable_user is added to canonical_tags and severity is
-    # raised to high so the policy override below routes to mediate.
-    wellbeing = detect_wellbeing(user_message)
+    # Wellbeing pre-filter (parallel to Module C, see issue #15). Now
+    # session-aware (CP4 v2, INTERIM_FINDINGS Cluster 4 fix): when a
+    # prior turn matched crisis AND the current message matches a
+    # recovery pattern, `is_recovery=True` and the mediation branch
+    # below uses a soft in-character response instead of the hardcoded
+    # crisis script. When it fires (crisis OR recovery), vulnerable_user
+    # is added to canonical_tags so audit trails record the wellbeing
+    # pathway took effect on this turn.
+    wellbeing = detect_wellbeing(user_message, history)
     if wellbeing["fired"] and "vulnerable_user" not in canonical_tags:
         canonical_tags = sorted(set(canonical_tags + ["vulnerable_user"]))
-        if severity == "low":
+        # Recovery turns are a softer signal — don't escalate severity
+        # if they didn't already cross the bar from crisis-side.
+        if severity == "low" and wellbeing.get("is_crisis"):
             severity = "high"
 
     # ---------------- A: cumulative risk state + action --------------------
@@ -364,11 +457,24 @@ def run_cab_turn(
         policy_reason = "prompt injection isolated before model generation"
     elif "vulnerable_user" in canonical_tags:
         action = "mediate"
-        risk_state = "Escalating" if risk_state != "Restricted" else risk_state
-        risk_score = max(risk_score, 0.70)
-        policy_reason = (
-            "vulnerable-user disclosure requires supportive non-clinical mediation"
-        )
+        # CP4 v2 (INTERIM_FINDINGS Cluster 4 fix): branch state/score on
+        # whether this is acute crisis vs. recovery / de-escalation. The
+        # tag stays `vulnerable_user` for audit either way; the action
+        # stays `mediate` (we still respond, just differently); but the
+        # risk telemetry and the response text differ.
+        if wellbeing.get("is_recovery"):
+            risk_state = "Suspicious"
+            risk_score = min(risk_score, 0.55)
+            policy_reason = (
+                "vulnerable-user recovery detected — de-escalating to "
+                "soft in-character mediation; audit retains vulnerable_user tag"
+            )
+        else:
+            risk_state = "Escalating" if risk_state != "Restricted" else risk_state
+            risk_score = max(risk_score, 0.70)
+            policy_reason = (
+                "vulnerable-user disclosure requires supportive non-clinical mediation"
+            )
     elif "persona_drift" in canonical_tags:
         action = "mediate"
         risk_state = "Suspicious" if risk_state == "Safe" else risk_state
@@ -398,15 +504,26 @@ def run_cab_turn(
             "reason": "pre-generation intervention",
         }
     elif action == "mediate" and "vulnerable_user" in canonical_tags:
-        candidate = _supportive_vulnerable_response()
+        # CP4 v2 (INTERIM_FINDINGS Cluster 4 fix): pick response text
+        # based on whether the wellbeing detector is in crisis or
+        # recovery mode. State + score were already adjusted in the
+        # policy override above so we don't have to re-touch them here.
+        if wellbeing.get("is_recovery"):
+            candidate = _supportive_recovery_response()
+            scan_reason = (
+                "soft recovery mediation generated without unsafe LLM call"
+            )
+        else:
+            candidate = _supportive_vulnerable_response()
+            scan_reason = (
+                "supportive crisis-style mediation generated without "
+                "unsafe LLM call"
+            )
         final = candidate
         mediation_applied = True
         output_scan_result = {
             "skipped": True,
-            "reason": (
-                "supportive crisis-style mediation generated without "
-                "unsafe LLM call"
-            ),
+            "reason": scan_reason,
         }
     else:
         if llm_generate is None:
