@@ -1,0 +1,1 @@
+participant_id,role,task_id,scenario_id,condition,task_success,time_seconds,error_count,umux_capabilities,umux_ease,trust_rating,usefulness_rating,satisfaction_rating,persona_preservation,safety_confidence,interface_clarity,intervention_timing,qualitative_useful,qualitative_frustrating,qualitative_persona,qualitative_trust,notes,data_type
