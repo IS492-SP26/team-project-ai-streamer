@@ -83,6 +83,86 @@ __all__ = ["main"]
 
 
 OLLV_WS_URL = os.environ.get("OLLV_WS_URL", "ws://127.0.0.1:12393/client-ws")
+ECHO_STREAM_PATH = os.environ.get(
+    "CAB_ECHO_STREAM_PATH", "/tmp/cab_chat_stream.jsonl"
+)
+
+
+# ---------------------------------------------------------------------------
+# Echo mode — Streamlit becomes a read-only mirror of the proxy's traffic.
+# When the user types in chat_input, the message is sent to OLLV WS only
+# (one LLM call total), proxy logs the full turn record to ECHO_STREAM_PATH,
+# and Streamlit polls that file to render the chat history. Both UIs are
+# now driven by the same single conversation.
+# ---------------------------------------------------------------------------
+
+
+def _read_echo_stream(after_offset: int = 0, max_records: int = 200) -> List[Dict[str, Any]]:
+    """Return the last `max_records` records from the echo stream, optionally
+    skipping the first `after_offset` bytes (for tail-only behavior)."""
+    try:
+        with open(ECHO_STREAM_PATH, "r", encoding="utf-8") as f:
+            if after_offset:
+                f.seek(after_offset)
+            lines = f.readlines()
+    except FileNotFoundError:
+        return []
+    except OSError:
+        return []
+
+    out: List[Dict[str, Any]] = []
+    for line in lines[-max_records:]:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
+
+
+def _echo_stream_size() -> int:
+    try:
+        return os.path.getsize(ECHO_STREAM_PATH)
+    except OSError:
+        return 0
+
+
+def _push_user_via_ollv(text: str) -> None:
+    """In echo mode, the user's message goes ONLY to OLLV's WS — no
+    in-process run_pipeline call. The proxy will log the full turn to
+    ECHO_STREAM_PATH; Streamlit picks it up on next refresh.
+    """
+    if not text or not text.strip():
+        return
+    counter = st.session_state.setdefault("ollv_sync_counter", 0)
+    st.session_state.ollv_sync_counter = counter + 1
+    st.session_state["ollv_last_sync_ts"] = time.time()
+
+    def _runner(msg: str, ws_url: str) -> None:
+        try:
+            import websockets  # noqa: WPS433
+
+            async def _do() -> None:
+                async with websockets.connect(ws_url, max_size=20_000_000) as ws:
+                    try:
+                        await asyncio.wait_for(ws.recv(), timeout=2)
+                    except asyncio.TimeoutError:
+                        pass
+                    await ws.send(json.dumps({"type": "text-input", "text": msg}))
+                    end = asyncio.get_event_loop().time() + 10
+                    while asyncio.get_event_loop().time() < end:
+                        try:
+                            await asyncio.wait_for(ws.recv(), timeout=1)
+                        except asyncio.TimeoutError:
+                            continue
+
+            asyncio.run(_do())
+        except Exception:
+            pass
+
+    threading.Thread(target=_runner, args=(text, OLLV_WS_URL), daemon=True).start()
 
 
 # ---------------------------------------------------------------------------
@@ -147,6 +227,8 @@ def _init_session_state() -> dict:
         "ollv_bridge_enabled": True,
         "ollv_sync_counter": 0,
         "ollv_last_sync_ts": 0.0,
+        "echo_mode": True,  # default ON: Streamlit echoes proxy traffic
+        "echo_baseline_offset": 0,  # bytes-into-jsonl from the moment we started
         "messages": [],
         "risk_score": 0.0,
         "risk_state": "Safe",
@@ -164,6 +246,10 @@ def _init_session_state() -> dict:
     if "rt_scenario_path" not in st.session_state:
         paths = list_scenario_paths()
         st.session_state.rt_scenario_path = str(paths[0]) if paths else ""
+    # Snapshot the echo-stream size on first session init so this Streamlit
+    # session only shows turns from now onwards (don't replay prior runs).
+    if "_echo_init_offset" not in st.session_state:
+        st.session_state._echo_init_offset = _echo_stream_size()
 
     theme = get_theme()
     inject_theme_css(theme)
@@ -196,6 +282,8 @@ def _reset_session() -> None:
     st.session_state.rt_session_label = ""
     st.session_state.ollv_sync_counter = 0
     st.session_state.session_id = str(uuid.uuid4())
+    # Snap echo offset to "now" so reset truly clears the echo view too.
+    st.session_state._echo_init_offset = _echo_stream_size()
 
 
 # ---------------------------------------------------------------------------
@@ -238,17 +326,36 @@ def _render_sidebar() -> None:
 
         toggles = st.columns(2)
         with toggles[0]:
-            st.session_state.llm_enabled = st.toggle(
-                "🤖 Live LLM",
-                value=st.session_state.llm_enabled,
-                help="Real model when ON; deterministic mock when OFF.",
+            new_echo = st.toggle(
+                "🪞 Echo Aria",
+                value=st.session_state.echo_mode,
+                help="When ON, Streamlit becomes a read-only mirror of "
+                     "Aria's chat (proxy traffic). 1 LLM call per turn, "
+                     "Streamlit + iframe show the same conversation. When "
+                     "OFF, Streamlit runs its own pipeline (2 LLM calls).",
             )
+            if new_echo != st.session_state.echo_mode:
+                st.session_state.echo_mode = new_echo
+                if new_echo:
+                    # Snap baseline offset to NOW so we don't replay history.
+                    st.session_state._echo_init_offset = _echo_stream_size()
+                    _reset_session()
         with toggles[1]:
             st.session_state.comparison_mode = st.toggle(
                 "⚔️ Compare",
                 value=st.session_state.comparison_mode,
-                help="Show baseline vs C-A-B side-by-side after each turn.",
+                help="Show baseline vs C-A-B side-by-side after each turn. "
+                     "Local-only mode (echo OFF).",
+                disabled=st.session_state.echo_mode,
             )
+
+        st.session_state.llm_enabled = st.toggle(
+            "🤖 Live LLM (offline echo only)",
+            value=st.session_state.llm_enabled,
+            help="Affects local-mode (echo OFF) only. Echo mode always uses "
+                 "whatever the proxy is configured for.",
+            disabled=st.session_state.echo_mode,
+        )
 
         st.divider()
 
@@ -492,6 +599,66 @@ def _process_turn(user_input: str, *, is_attack: bool = False, user_id: Optional
 # ---------------------------------------------------------------------------
 
 
+def _refresh_from_echo_stream() -> None:
+    """Tail the proxy's echo JSONL and rebuild session events from it.
+
+    Only records appended AFTER `_echo_init_offset` are considered, so a
+    fresh Streamlit session doesn't replay yesterday's chat history.
+    Toggling Pipeline mode or Reset moves the offset to NOW.
+    """
+    init_offset = st.session_state.get("_echo_init_offset", 0)
+    records = _read_echo_stream(after_offset=init_offset, max_records=200)
+
+    # Filter by pipeline_mode so toggling baseline ↔ cab gives a clean
+    # split (echo mode shows only the active mode's traffic).
+    active_mode = st.session_state.pipeline_mode
+    records = [r for r in records if r.get("mode") == active_mode]
+
+    events: List[Dict[str, Any]] = []
+    stats = _empty_stats()
+    for i, r in enumerate(records, start=1):
+        action = r.get("action", "allow")
+        ev = {
+            "turn_number": i,
+            "user_message": r.get("user_message", ""),
+            "user_id": r.get("session_id", "viewer")[:12],
+            "is_attack_turn": False,  # echo doesn't tag this; UI just shows badges
+            "pipeline_mode": r.get("mode", active_mode),
+            "risk_state": r.get("risk_state", "Safe"),
+            "risk_score": float(r.get("risk_score", 0.0)),
+            "action": action,
+            "ai_response": r.get("response_text", ""),
+            "block_reason": r.get("block_reason", ""),
+            "risk_tags": r.get("module_c_tags", []) or [],
+            "module_c_latency_ms": 0.0,
+            "injection_blocked": bool(r.get("injection_blocked", False)),
+            "layer_details": r.get("layer_details", {}),
+            "wellbeing_fired": bool(r.get("wellbeing_fired", False)),
+        }
+        events.append(ev)
+        stats["total"] += 1
+        if action in ("block", "restricted"):
+            stats["blocked"] += 1
+        else:
+            stats["passed"] += 1
+        if ev["risk_tags"]:
+            stats["harmful_caught"] += 1
+    stats["block_rate"] = (
+        (stats["blocked"] / stats["total"] * 100) if stats["total"] else 0.0
+    )
+
+    st.session_state.events = events
+    st.session_state.turn = len(events)
+    st.session_state.stats = stats
+    if events:
+        latest = events[-1]
+        st.session_state.risk_state = latest["risk_state"]
+        st.session_state.risk_score = latest["risk_score"]
+    else:
+        st.session_state.risk_state = "Safe"
+        st.session_state.risk_score = 0.0
+
+
 def _start_red_team_run() -> None:
     path_str = st.session_state.rt_scenario_path
     if not path_str or not Path(path_str).exists():
@@ -526,7 +693,12 @@ def _advance_red_team_one() -> None:
         st.session_state.rt_scenario_done = True
         st.session_state.rt_iterator = None
         return
-    _process_turn(event.user_message, is_attack=event.is_attack_turn, user_id=event.user_id)
+    if st.session_state.echo_mode:
+        # Echo mode: route through OLLV → proxy → echo stream → Streamlit
+        # picks it up on next refresh. Single LLM call.
+        _push_user_via_ollv(event.user_message)
+    else:
+        _process_turn(event.user_message, is_attack=event.is_attack_turn, user_id=event.user_id)
 
 
 # ---------------------------------------------------------------------------
@@ -666,6 +838,15 @@ def main() -> None:
 
     _render_mode_banner()
 
+    # In echo mode, poll the proxy's echo-stream JSONL on every rerender
+    # and rebuild events from it (this Streamlit session's slice only).
+    if st.session_state.echo_mode:
+        _refresh_from_echo_stream()
+        # Drive auto-refresh so live OLLV traffic appears even when the
+        # user hasn't interacted with this Streamlit page.
+        if st_autorefresh is not None:
+            st_autorefresh(interval=2000, key="echo_autorefresh")
+
     # ============================== stats dashboard ==============================
     render_stats_dashboard(st.session_state.stats, theme)
     st.markdown("---")
@@ -744,11 +925,23 @@ def main() -> None:
                 )
 
         # input
-        user_input = st.chat_input("Type a message to test…")
+        placeholder = (
+            "Type a message — sent to Aria (echo mode)"
+            if st.session_state.echo_mode
+            else "Type a message — local pipeline (echo OFF)"
+        )
+        user_input = st.chat_input(placeholder)
         if not user_input and st.session_state.get("_pending_example"):
             user_input = st.session_state.pop("_pending_example")
         if user_input:
-            _process_turn(user_input)
+            if st.session_state.echo_mode:
+                _push_user_via_ollv(user_input)
+                # Surface the user's message immediately as a "pending" entry
+                # so they don't see a blank lag while OLLV processes; the
+                # echo-stream poll will replace it with the real graded turn.
+                st.session_state["_echo_pending_msg"] = user_input
+            else:
+                _process_turn(user_input)
             st.rerun()
 
         if st.session_state.rt_scenario_done:

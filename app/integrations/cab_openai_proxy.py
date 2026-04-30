@@ -66,6 +66,24 @@ from pipeline.cab_pipeline import deterministic_mock_llm, run_cab_turn  # noqa: 
 MODEL_ID = "cab-aria"
 DEFAULT_DB_PATH = str(_APP_ROOT / "data" / "telemetry.db")
 
+# Echo stream — every chat completion appends one JSON line here so the
+# Streamlit dashboard can echo OLLV's conversation without making a
+# duplicate LLM call. The Streamlit "echo mode" tails this file and
+# renders it as the chat history. One LLM call per turn, two UIs in sync.
+ECHO_STREAM_PATH = os.environ.get(
+    "CAB_ECHO_STREAM_PATH",
+    "/tmp/cab_chat_stream.jsonl",
+)
+
+
+def _echo_record(record: Dict[str, Any]) -> None:
+    """Append one JSON record to the echo stream. Best-effort, never raises."""
+    try:
+        with open(ECHO_STREAM_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
 # GitHub Models — when GITHUB_TOKEN is set, the proxy threads a real-LLM
 # callable into cab_pipeline so Aria's CAB-mode responses are varied
 # real-model output instead of the deterministic mock. Baseline mode
@@ -426,6 +444,22 @@ async def chat_completions(request: Request) -> JSONResponse:
             latest_user[:80],
             text[:80],
         )
+        _echo_record({
+            "ts": time.time(),
+            "session_id": session_id,
+            "turn_number": turn_number,
+            "mode": "baseline",
+            "user_message": latest_user,
+            "response_text": text,
+            "action": "allow",
+            "risk_state": "Safe",
+            "risk_score": 0.0,
+            "module_c_tags": [],
+            "injection_blocked": False,
+            "wellbeing_fired": False,
+            "block_reason": "",
+            "layer_details": {},
+        })
         if want_stream:
             return _build_streaming_response(text)
         return JSONResponse(
@@ -466,6 +500,22 @@ async def chat_completions(request: Request) -> JSONResponse:
         latest_user[:80],
     )
     final_text = trace.get("ai_response_final", "")
+    _echo_record({
+        "ts": time.time(),
+        "session_id": session_id,
+        "turn_number": turn_number,
+        "mode": "cab",
+        "user_message": latest_user,
+        "response_text": final_text,
+        "action": trace.get("action", "allow"),
+        "risk_state": trace.get("risk_state", "Safe"),
+        "risk_score": float(trace.get("risk_score", 0.0)),
+        "module_c_tags": trace.get("module_c_tags") or [],
+        "injection_blocked": bool(trace.get("injection_blocked", False)),
+        "wellbeing_fired": bool(wellbeing_fired),
+        "block_reason": trace.get("block_reason", ""),
+        "layer_details": (trace.get("module_c_output") or {}).get("layer_details", {}),
+    })
     if want_stream:
         return _build_streaming_response(final_text)
     return JSONResponse(
