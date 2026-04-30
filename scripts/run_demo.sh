@@ -20,7 +20,7 @@ case "$MODE" in
     streamlit)
         echo "[run_demo] starting Streamlit live red-team demo on default port"
         echo "[run_demo] (Ctrl-C to stop)"
-        exec streamlit run app/frontend/red_team_demo.py
+        exec streamlit run app/frontend/app.py
         ;;
     proxy)
         echo "[run_demo] starting cab_openai_proxy in background, then streamlit"
@@ -29,7 +29,7 @@ case "$MODE" in
         trap "echo '[run_demo] stopping proxy'; kill $PROXY_PID 2>/dev/null || true" EXIT
         sleep 1
         echo "[run_demo] proxy pid=$PROXY_PID — http://127.0.0.1:8000/healthz"
-        exec streamlit run app/frontend/red_team_demo.py
+        exec streamlit run app/frontend/app.py
         ;;
     preflight)
         echo "[run_demo] preflight: pytest"

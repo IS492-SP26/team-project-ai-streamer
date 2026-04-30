@@ -100,82 +100,69 @@ def call_llm(
     return resp.json()["choices"][0]["message"]["content"]
 
 
-def run_pipeline(user_message: str, session_state: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Run one user turn: Module C -> risk tracker -> policy -> LLM (if not blocked) -> mediation.
+def _run_baseline_turn(user_message: str, session_state: Dict[str, Any]) -> Dict[str, Any]:
+    """Baseline mode: bypass Module C and Module A entirely.
 
-    Mutates session_state: risk_score, risk_state, turn_number (caller stores messages).
+    Used by the live demo to show what happens when there is no governance
+    layer in front of the LLM. Returns a result dict with the same shape as
+    the C-A-B path so the UI can render either uniformly.
     """
-    prev_score = float(session_state.get("risk_score", 0.0))
-    prev_state = str(session_state.get("risk_state", "Safe"))
     turn = int(session_state.get("turn_number", 0)) + 1
     session_state["turn_number"] = turn
-
     history: List[Dict[str, str]] = list(session_state.get("messages") or [])
 
-    # --- Step 1: Module C ---
-    t0 = time.time()
-    module_c_output = process_message(user_message, history)
-    module_c_latency_ms = (time.time() - t0) * 1000
-
-    # --- Step 2: Module A risk tracker + policy ---
-    risk_update = update_risk_from_module_c(module_c_output, prev_score, prev_state)
-    risk_score = float(risk_update["risk_score"])
-    risk_state = str(risk_update["risk_state"])
-    session_state["risk_score"] = risk_score
-    session_state["risk_state"] = risk_state
-
-    action, policy_reason = decide_action(risk_state)
-
-    # --- Step 3: LLM call (skipped when blocked) ---
     system_prompt = _load_aria_system_prompt()
     token = _get_github_token()
-
-    ai_raw = ""
-    if action == "block":
-        ai_raw = ""
-    elif not token:
-        ai_raw = (
-            "Hmm, I can't reach the stream brain right now (no GITHUB_TOKEN). "
-            "Pretend I just waved and said hi! 🐱"
-        )
-    else:
+    t0 = time.time()
+    if token:
         try:
-            ai_raw = call_llm(user_message, history, system_prompt, token, DEFAULT_MODEL)
+            ai_text = call_llm(user_message, history, system_prompt, token, DEFAULT_MODEL)
         except Exception:
-            ai_raw = (
-                "Oops, chat backend hiccupped — give me one sec! "
-                "Still here and rooting for you~ 🐱"
-            )
+            from pipeline.cab_pipeline import deterministic_mock_llm
+            ai_text = deterministic_mock_llm(user_message, history, mode="baseline")
+    else:
+        from pipeline.cab_pipeline import deterministic_mock_llm
+        ai_text = deterministic_mock_llm(user_message, history, mode="baseline")
+    latency_ms = int((time.time() - t0) * 1000)
 
-    # --- Step 4: Mediation ---
-    final_text, mediation_applied = apply_mediation(action, ai_raw)
+    # Baseline does not update risk; reset to Safe so the UI shows "no governance".
+    session_state["risk_score"] = 0.0
+    session_state["risk_state"] = "Safe"
+    session_state["last_action"] = "allow"
+    session_state["last_policy_reason"] = "baseline mode bypasses C-A-B"
+    session_state["last_module_c_latency_ms"] = 0.0
 
-    # Enrich session for UI
-    session_state["last_policy_reason"] = policy_reason
-    session_state["last_action"] = action
-    session_state["last_module_c_latency_ms"] = module_c_latency_ms
+    module_c_output = {
+        "message": user_message,
+        "injection_blocked": False,
+        "risk_tags": [],
+        "severity": "low",
+        "block_reason": "",
+        "layer_details": {"baseline_bypass": {"fired": True}},
+    }
 
     result = {
-        "risk_state": risk_state,
-        "risk_score": risk_score,
-        "action": action,
-        "ai_response_final": final_text,
-        "ai_response_original": ai_raw,
-        "mediation_applied": mediation_applied,
+        "risk_state": "Safe",
+        "risk_score": 0.0,
+        "action": "allow",
+        "ai_response_final": ai_text,
+        "ai_response_original": ai_text,
+        "mediation_applied": False,
         "module_c_output": module_c_output,
         "turn_number": turn,
         "user_message": user_message,
-        "injection_blocked": module_c_output.get("injection_blocked", False),
-        "module_c_tags": module_c_output.get("risk_tags", []),
-        "severity": module_c_output.get("severity", "low"),
-        "block_reason": module_c_output.get("block_reason", ""),
-        "latency_ms": int((time.time() - t0) * 1000),
-        "model_used": DEFAULT_MODEL if token and action != "block" else "mock",
-        "user_id": session_state.get("user_id", None),
-        "session_id": session_state.get("session_id", None),
-        "scenario_id": session_state.get("scenario_id", None),
-        "mode": session_state.get("mode", "cab_mock"),
+        "injection_blocked": False,
+        "module_c_tags": [],
+        "severity": "low",
+        "block_reason": "",
+        "latency_ms": latency_ms,
+        "model_used": DEFAULT_MODEL if token else "deterministic-mock-baseline",
+        "user_id": session_state.get("user_id"),
+        "session_id": session_state.get("session_id"),
+        "scenario_id": session_state.get("scenario_id"),
+        "mode": "baseline",
+        "pipeline_mode": "baseline",
+        "wellbeing_fired": False,
     }
 
     if session_state.get("session_id"):
@@ -187,9 +174,99 @@ def run_pipeline(user_message: str, session_state: Dict[str, Any]) -> Dict[str, 
                 db_path=_TELEMETRY_DB_PATH,
             )
         except Exception:
-            # Telemetry must never crash the pipeline. The schema was
-            # already migrated at module import time (see top-of-file
-            # init_db call), so this except handles transient I/O only.
             pass
-
     return result
+
+
+def run_pipeline(user_message: str, session_state: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Run one user turn through C-A-B (or baseline if pipeline_mode says so):
+    Module C -> risk tracker -> policy -> LLM (if not blocked) -> mediation.
+
+    Mutates session_state: risk_score, risk_state, turn_number.
+    The caller chooses cab vs baseline by setting session_state["pipeline_mode"].
+    """
+    if session_state.get("pipeline_mode") == "baseline":
+        return _run_baseline_turn(user_message, session_state)
+
+    # CAB path: delegate to cab_pipeline.run_cab_turn so that the manual
+    # chat surface, the red-team auto-play, the proxy, and the offline
+    # eval all share exactly one governance code path. This way the
+    # wellbeing pre-filter, the CP4 policy overrides, and the
+    # output_scanner all run for manual chat too (previously only the
+    # offline eval got them — that gap was a bug).
+    from pipeline.cab_pipeline import run_cab_turn  # local import avoids cycles
+
+    prev_score = float(session_state.get("risk_score", 0.0))
+    prev_state = str(session_state.get("risk_state", "Safe"))
+    turn = int(session_state.get("turn_number", 0)) + 1
+    session_state["turn_number"] = turn
+    history: List[Dict[str, str]] = list(session_state.get("messages") or [])
+
+    # Build a real-LLM generator that uses GitHub Models when a token is
+    # present and falls back to the deterministic mock on error or no
+    # token. cab_pipeline calls llm_generate only when the action allows
+    # generation (i.e. not blocked, not vulnerable_user mediation).
+    system_prompt = _load_aria_system_prompt()
+    token = _get_github_token()
+
+    def _llm_generate(msg: str, hist: List[Dict[str, str]]) -> str:
+        # Build conversation with persistent system prompt.
+        history_with_system = [{"role": "system", "content": system_prompt}, *hist]
+        if not token:
+            from pipeline.cab_pipeline import deterministic_mock_llm
+            return deterministic_mock_llm(msg, history_with_system, mode="cab")
+        try:
+            return call_llm(msg, hist, system_prompt, token, DEFAULT_MODEL)
+        except Exception:
+            from pipeline.cab_pipeline import deterministic_mock_llm
+            return deterministic_mock_llm(msg, history_with_system, mode="cab")
+
+    trace = run_cab_turn(
+        session_id=str(session_state.get("session_id") or "manual_chat"),
+        scenario_id=str(session_state.get("scenario_id") or "manual_chat"),
+        scenario_type=str(session_state.get("scenario_type") or "manual_chat"),
+        user_id=str(session_state.get("user_id") or "manual_user"),
+        turn_number=turn,
+        user_message=user_message,
+        history=history,
+        previous_risk_score=prev_score,
+        previous_risk_state=prev_state,
+        mode="cab",
+        llm_generate=_llm_generate,
+        db_path=_TELEMETRY_DB_PATH if session_state.get("session_id") else None,
+        synthetic_or_real="manual_chat",
+    )
+
+    # Mirror trace fields back into session_state for the UI sidebar.
+    session_state["risk_score"] = float(trace["risk_score"])
+    session_state["risk_state"] = str(trace["risk_state"])
+    session_state["last_action"] = str(trace["action"])
+    session_state["last_policy_reason"] = str(trace.get("policy_reason", ""))
+    session_state["last_module_c_latency_ms"] = float(trace.get("latency_ms", 0))
+
+    wellbeing = trace.get("wellbeing_detector") or {}
+
+    return {
+        "risk_state": trace["risk_state"],
+        "risk_score": trace["risk_score"],
+        "action": trace["action"],
+        "ai_response_final": trace.get("ai_response_final", ""),
+        "ai_response_original": trace.get("ai_response_original", ""),
+        "mediation_applied": trace.get("mediation_applied", False),
+        "module_c_output": trace.get("module_c_output", {}),
+        "turn_number": trace.get("turn_number", turn),
+        "user_message": user_message,
+        "injection_blocked": trace.get("injection_blocked", False),
+        "module_c_tags": trace.get("module_c_tags", []),
+        "severity": trace.get("severity", "low"),
+        "block_reason": trace.get("block_reason", ""),
+        "latency_ms": trace.get("latency_ms", 0),
+        "model_used": trace.get("model_used", DEFAULT_MODEL if token else "mock"),
+        "user_id": session_state.get("user_id", None),
+        "session_id": session_state.get("session_id", None),
+        "scenario_id": session_state.get("scenario_id", None),
+        "mode": "cab",
+        "pipeline_mode": "cab",
+        "wellbeing_fired": bool(wellbeing.get("fired", False)),
+    }

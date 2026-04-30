@@ -116,14 +116,14 @@ Two options:
 
 If you don't want to touch Open-LLM-VTuber's source, simplest alternative
 during the live demo: keep this stack in **CAB mode only** and use the
-Streamlit `red_team_demo.py` page in a side window for the visible
+Streamlit `app.py` page in a side window for the visible
 toggle (the audience sees the toggle and the same scenarios on the
 Streamlit panel; Aria's avatar in Open-LLM-VTuber is just the visual
 representation of the CAB-mediated responses).
 
 ## Fallback if Open-LLM-VTuber misbehaves on demo day
 
-The Streamlit `red_team_demo.py` page is the authoritative demo. If
+The Streamlit `app.py` page is the authoritative demo. If
 Open-LLM-VTuber fails to render or its TTS stutters, hide that window
 and run the demo from the Streamlit page alone. The same scenario
 data, same toggle, same governance panel — just no avatar.

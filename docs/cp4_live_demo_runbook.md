@@ -35,7 +35,7 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions \
   -d '{"model":"cab-aria","messages":[{"role":"user","content":"hello aria"}]}'
 
 # 6. Streamlit demo page launches (this is the live demo surface)
-streamlit run app/frontend/red_team_demo.py
+streamlit run app/frontend/app.py
 # Open the URL it prints; verify ▶ Play button advances messages.
 ```
 
@@ -45,7 +45,7 @@ If any step fails, fix before demo. Don't try to debug live.
 
 ## What the audience sees
 
-**The Streamlit `red_team_demo.py` page** is the focal point. Layout:
+**The Streamlit `app.py` page** is the focal point. Layout:
 
 - Top: scenario picker, mode toggle (cab / baseline), pace slider,
   ▶ Play / ⏸ Pause / ⏭ Step buttons.
@@ -94,7 +94,7 @@ C-A-B first." Otherwise skip — Streamlit alone is enough.
 ```bash
 # Terminal 1: Streamlit demo
 cd ~/team-project-ai-streamer
-streamlit run app/frontend/red_team_demo.py
+streamlit run app/frontend/app.py
 
 # (Optional) Terminal 2: proxy, only if you also run Open-LLM-VTuber
 cd ~/team-project-ai-streamer
