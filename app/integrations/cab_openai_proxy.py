@@ -89,7 +89,23 @@ GITHUB_MODELS_URL = os.environ.get(
     "CAB_LIVE_LLM_URL",
     "https://models.github.ai/inference/chat/completions",
 )
-DEFAULT_LIVE_MODEL = os.environ.get("CAB_LIVE_MODEL", "openai/gpt-5-chat")
+# Default chosen for demo robustness: gpt-4.1-mini sits in the
+# higher-quota "low" tier (150 RPM / 1500 RPD on the free token tier),
+# so a back-to-back demo run firing ~18 requests in 30 s does not get
+# 429-throttled mid-presentation. gpt-5-chat is in the "high" tier
+# (50 RPM / 1000 RPD) and gets throttled fast.
+# Override with CAB_LIVE_MODEL env when you want a stronger model.
+DEFAULT_LIVE_MODEL = os.environ.get("CAB_LIVE_MODEL", "openai/gpt-4.1-mini")
+# Fallback chain when the primary 429s. Tried in order. Each fallback
+# is a different rate-limit bucket so most demos survive even if one
+# model is throttled.
+LIVE_MODEL_FALLBACKS = [
+    m for m in os.environ.get(
+        "CAB_LIVE_MODEL_FALLBACKS",
+        "openai/gpt-4.1-mini,openai/gpt-4.1,openai/gpt-4o-mini,meta/llama-3.3-70b-instruct",
+    ).split(",")
+    if m.strip()
+]
 ARIA_SYSTEM_PROMPT_PATH = _APP_ROOT / "prompts" / "aria_system_prompt.txt"
 _DEFAULT_ARIA_PROMPT = (
     "You are Aria, a friendly AI VTuber on a live stream. "
@@ -126,35 +142,64 @@ def _build_real_llm_generate():
 
     system_prompt = _load_aria_prompt()
 
+    # Primary model + fallbacks in order. De-dup but keep order.
+    seen: set = set()
+    candidate_models: List[str] = []
+    for m in [DEFAULT_LIVE_MODEL, *LIVE_MODEL_FALLBACKS]:
+        m = m.strip()
+        if m and m not in seen:
+            candidate_models.append(m)
+            seen.add(m)
+
     def _generate(user_message: str, history: List[Dict[str, str]]) -> str:
         messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
         for h in history:
             if h.get("role") in ("user", "assistant"):
                 messages.append({"role": h["role"], "content": str(h.get("content", ""))})
         messages.append({"role": "user", "content": user_message})
-        try:
-            resp = requests.post(
-                GITHUB_MODELS_URL,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Accept": "application/vnd.github+json",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": DEFAULT_LIVE_MODEL,
-                    "messages": messages,
-                    "max_tokens": 220,
-                    "temperature": 0.8,
-                },
-                timeout=20,
-            )
-            resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
-        except Exception as exc:  # pragma: no cover — flaky-network safety net
-            logger.warning(
-                "real-LLM call failed, falling back to deterministic mock: %s", exc
-            )
-            return deterministic_mock_llm(user_message, history, mode="cab")
+
+        last_exc = None
+        for model_id in candidate_models:
+            try:
+                resp = requests.post(
+                    GITHUB_MODELS_URL,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Accept": "application/vnd.github+json",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model_id,
+                        "messages": messages,
+                        "max_tokens": 220,
+                        "temperature": 0.8,
+                    },
+                    timeout=20,
+                )
+                # 429 / 5xx → try next model in the fallback chain.
+                if resp.status_code in (429, 500, 502, 503, 504):
+                    logger.warning(
+                        "model=%s returned HTTP %s, trying next fallback",
+                        model_id, resp.status_code,
+                    )
+                    continue
+                resp.raise_for_status()
+                return resp.json()["choices"][0]["message"]["content"]
+            except requests.HTTPError as exc:
+                # Non-retryable HTTP (400, 401, 403, 404) — stop trying chain.
+                logger.warning("model=%s HTTPError, stopping chain: %s", model_id, exc)
+                last_exc = exc
+                break
+            except Exception as exc:  # pragma: no cover — flaky-network safety
+                logger.warning("model=%s call failed: %s; trying next", model_id, exc)
+                last_exc = exc
+                continue
+
+        logger.warning(
+            "all real-LLM models exhausted (last err: %s); falling back to mock",
+            last_exc,
+        )
+        return deterministic_mock_llm(user_message, history, mode="cab")
 
     return _generate
 

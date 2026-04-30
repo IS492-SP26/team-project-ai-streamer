@@ -39,7 +39,13 @@ GITHUB_MODELS_URL = os.environ.get(
     "CAB_LIVE_LLM_URL",
     "https://models.github.ai/inference/chat/completions",
 )
-DEFAULT_MODEL = os.environ.get("CAB_LIVE_MODEL", "openai/gpt-5-chat")
+DEFAULT_MODEL = os.environ.get("CAB_LIVE_MODEL", "openai/gpt-4.1-mini")
+_MODEL_FALLBACKS = [
+    m.strip() for m in os.environ.get(
+        "CAB_LIVE_MODEL_FALLBACKS",
+        "openai/gpt-4.1-mini,openai/gpt-4.1,openai/gpt-4o-mini,meta/llama-3.3-70b-instruct",
+    ).split(",") if m.strip()
+]
 
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 _TELEMETRY_DB_PATH = os.path.join(_APP_DIR, "data", "telemetry.db")
@@ -90,23 +96,43 @@ def call_llm(
             messages.append({"role": h["role"], "content": h["content"]})
     messages.append({"role": "user", "content": user_message})
 
-    resp = requests.post(
-        GITHUB_MODELS_URL,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": 0.7,
-        },
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"]
+    # Try the primary model first, then fall through CAB_LIVE_MODEL_FALLBACKS
+    # on 429 / 5xx so a throttled model doesn't kill the demo. Each model
+    # has its own rate-limit bucket so the chain typically survives.
+    seen: set = set()
+    candidates: List[str] = []
+    for m in [model, *_MODEL_FALLBACKS]:
+        if m and m not in seen:
+            candidates.append(m)
+            seen.add(m)
+
+    last_exc: Exception | None = None
+    for model_id in candidates:
+        resp = requests.post(
+            GITHUB_MODELS_URL,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model_id,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": 0.7,
+            },
+            timeout=30,
+        )
+        if resp.status_code in (429, 500, 502, 503, 504):
+            last_exc = requests.HTTPError(
+                f"{resp.status_code} on {model_id}", response=resp
+            )
+            continue
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("no model candidates configured")
 
 
 def _run_baseline_turn(user_message: str, session_state: Dict[str, Any]) -> Dict[str, Any]:
