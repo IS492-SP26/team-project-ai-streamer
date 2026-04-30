@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import sys
+import uuid
 
 import streamlit as st
 
@@ -23,6 +24,10 @@ STREAM_TITLE = "Aria // Code & Rhythm ✨"
 
 
 def _init_session() -> None:
+    if "session_id" not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())
+    if "user_id" not in st.session_state:
+        st.session_state.user_id = str(uuid.uuid4())
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "pipeline_events" not in st.session_state:
@@ -77,6 +82,11 @@ def main() -> None:
         st.markdown("---")
         st.markdown("### Pipeline log")
         render_event_log(st.session_state.pipeline_events, theme)
+        st.markdown("---")
+        st.caption(
+            f"session `{st.session_state.session_id[:8]}` · "
+            f"user `{st.session_state.user_id[:8]}`"
+        )
 
     # Header
     h1, h2 = st.columns([1, 4])
