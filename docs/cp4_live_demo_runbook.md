@@ -89,19 +89,57 @@ C-A-B first." Otherwise skip — Streamlit alone is enough.
 
 ---
 
-## Two-terminal launch (bare minimum)
+## Two-terminal launch (Streamlit-only demo, most reliable)
 
 ```bash
 # Terminal 1: Streamlit demo
 cd ~/team-project-ai-streamer
 streamlit run app/frontend/app.py
 
-# (Optional) Terminal 2: proxy, only if you also run Open-LLM-VTuber
-cd ~/team-project-ai-streamer
-python -m app.integrations.cab_openai_proxy
+# (or one-line equivalent)
+./scripts/run_demo.sh
 ```
 
 OBS captures the Streamlit browser window full-screen. Done.
+
+## Three-terminal launch (Streamlit + Aria avatar via Open-LLM-VTuber)
+
+If you have time to install Open-LLM-VTuber once (see
+`docs/integrations/open_llm_vtuber_setup.md` — verified working), the
+audience also sees a Live2D avatar reacting in real time. Setup is
+~15 minutes the first time and ~10 seconds on every subsequent run.
+
+```bash
+# Terminal 1 — proxy. CAB_PROXY_FORCE_MODE flips between cab and baseline
+# without restarting OLLV. Default to cab; restart this terminal with
+# CAB_PROXY_FORCE_MODE=baseline to flip mid-demo.
+cd ~/team-project-ai-streamer
+CAB_PROXY_FORCE_MODE=cab python -m app.integrations.cab_openai_proxy
+
+# Terminal 2 — Open-LLM-VTuber (loads Aria avatar at http://localhost:12393)
+cd ~/Open-LLM-VTuber
+.venv/bin/python run_server.py
+
+# Terminal 3 — drive a scripted attack scenario into OLLV
+cd ~/team-project-ai-streamer
+python -m app.red_team.ollv_ws_driver \
+  --scenario app/eval/scenarios/direct_injection.json --mode cab
+```
+
+OBS scene: tile two browser windows side-by-side — left half is the
+OLLV avatar (`http://localhost:12393`), right half is the Streamlit
+governance panel (`http://localhost:8501`). The proxy terminal is
+visible-but-small in a corner so the audience can see the audit log
+print "action=block state=Restricted" the moment the injection turn
+fires.
+
+To flip baseline ↔ cab during the demo:
+
+1. Stop Terminal 1 with Ctrl-C.
+2. Re-launch as `CAB_PROXY_FORCE_MODE=baseline python -m app.integrations.cab_openai_proxy`.
+3. Re-run the same driver command in Terminal 3.
+
+Aria stays running across the swap.
 
 ---
 

@@ -30,12 +30,27 @@ Provenance: 2026-04-29. CP4 live demo integration layer.
 """
 from __future__ import annotations
 
+import logging
 import os
 import sys
 import time
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+# Module-level logger so every chat call emits a one-line audit trace
+# the operator can grep during a live demo or post-hoc review.
+logger = logging.getLogger("cab_proxy")
+if not logger.handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(
+        logging.Formatter(
+            "%(asctime)s [cab_proxy] %(message)s",
+            datefmt="%H:%M:%S",
+        )
+    )
+    logger.addHandler(_h)
+logger.setLevel(os.environ.get("CAB_PROXY_LOG_LEVEL", "info").upper())
 
 # sys.path setup
 _APP_ROOT = Path(__file__).resolve().parents[1]
@@ -150,9 +165,17 @@ async def chat_completions(request: Request) -> JSONResponse:
             detail="`messages` must contain at least one user-role message",
         )
 
-    # Mode: body field cab_mode > header X-CAB-Mode > default cab.
+    # Mode resolution order:
+    #   1. Process-level CAB_PROXY_FORCE_MODE env var (operator override
+    #      — set this when the calling client cannot inject the per-
+    #      request mode, e.g. Open-LLM-VTuber's openai_compatible_llm).
+    #   2. Per-request body field cab_mode.
+    #   3. Per-request header X-CAB-Mode.
+    #   4. Default cab.
+    forced = os.environ.get("CAB_PROXY_FORCE_MODE", "").strip().lower()
     mode = (
-        body.get("cab_mode")
+        forced
+        or body.get("cab_mode")
         or request.headers.get("x-cab-mode")
         or "cab"
     )
@@ -177,6 +200,13 @@ async def chat_completions(request: Request) -> JSONResponse:
 
     if mode == "baseline":
         text = deterministic_mock_llm(latest_user, history, mode="baseline")
+        logger.info(
+            "BASELINE T%d session=%s msg=%r → response=%r",
+            turn_number,
+            session_id[:12],
+            latest_user[:80],
+            text[:80],
+        )
         return JSONResponse(
             _build_chat_response(
                 text,
@@ -197,6 +227,20 @@ async def chat_completions(request: Request) -> JSONResponse:
         db_path=db_path,
         synthetic_or_real="live_proxy",
     )
+    wellbeing_fired = (trace.get("wellbeing_detector") or {}).get("fired", False)
+    logger.info(
+        "CAB T%d session=%s action=%s state=%s score=%.2f tags=%s "
+        "injection=%s wellbeing=%s msg=%r",
+        turn_number,
+        session_id[:12],
+        trace.get("action"),
+        trace.get("risk_state"),
+        float(trace.get("risk_score", 0.0)),
+        trace.get("module_c_tags") or [],
+        bool(trace.get("injection_blocked")),
+        bool(wellbeing_fired),
+        latest_user[:80],
+    )
     return JSONResponse(
         _build_chat_response(
             trace.get("ai_response_final", ""),
@@ -209,9 +253,7 @@ async def chat_completions(request: Request) -> JSONResponse:
                 "action": trace.get("action"),
                 "module_c_tags": trace.get("module_c_tags"),
                 "injection_blocked": trace.get("injection_blocked"),
-                "wellbeing_fired": (
-                    (trace.get("wellbeing_detector") or {}).get("fired", False)
-                ),
+                "wellbeing_fired": wellbeing_fired,
                 "block_reason": trace.get("block_reason"),
             },
         )
