@@ -30,8 +30,16 @@ from data.logger import init_db, log_turn
 # GitHub Models API (OpenAI-compatible)
 # ---------------------------------------------------------------------------
 
-GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions"
-DEFAULT_MODEL = "gpt-4o-mini"
+# GitHub Models — newer marketplace endpoint with stronger 0x-quota models
+# (openai/gpt-5-chat, openai/gpt-4.1, etc.). Same env contract as
+# integrations/cab_openai_proxy so the Streamlit path and the proxy path
+# end up calling the same model in CAB mode. Overridable for offline
+# testing or to switch models without code changes.
+GITHUB_MODELS_URL = os.environ.get(
+    "CAB_LIVE_LLM_URL",
+    "https://models.github.ai/inference/chat/completions",
+)
+DEFAULT_MODEL = os.environ.get("CAB_LIVE_MODEL", "openai/gpt-5-chat")
 
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 _TELEMETRY_DB_PATH = os.path.join(_APP_DIR, "data", "telemetry.db")
@@ -86,6 +94,7 @@ def call_llm(
         GITHUB_MODELS_URL,
         headers={
             "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
             "Content-Type": "application/json",
         },
         json={

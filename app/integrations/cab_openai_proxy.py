@@ -66,15 +66,30 @@ from pipeline.cab_pipeline import deterministic_mock_llm, run_cab_turn  # noqa: 
 MODEL_ID = "cab-aria"
 DEFAULT_DB_PATH = str(_APP_ROOT / "data" / "telemetry.db")
 
-# GitHub Models — same path used by main.run_pipeline. When GITHUB_TOKEN is
-# set in the environment, the proxy threads a real-LLM callable into
-# cab_pipeline so Aria's responses are varied gpt-4o-mini output instead of
-# the deterministic mock. When the token is absent the mock is still used —
-# slides will note "live LLM enabled" vs "offline deterministic" depending
-# on what's running. Baseline mode never uses the real LLM (the punchline
-# of the demo depends on the marker string).
-GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions"
-DEFAULT_LIVE_MODEL = os.environ.get("CAB_LIVE_MODEL", "gpt-4o-mini")
+# GitHub Models — when GITHUB_TOKEN is set, the proxy threads a real-LLM
+# callable into cab_pipeline so Aria's CAB-mode responses are varied
+# real-model output instead of the deterministic mock. Baseline mode
+# never uses the real LLM (the punchline of the demo depends on the
+# marker string).
+#
+# We use the newer GitHub Models marketplace endpoint at
+# `https://models.github.ai/inference/chat/completions`, which catalogs
+# strong 0x-quota Copilot models including:
+#   openai/gpt-5-chat        — best general-purpose, default
+#   openai/gpt-4.1           — strong, slightly older
+#   openai/gpt-4.1-mini      — fast / cheap
+#   meta/llama-3.3-70b-instruct
+#   meta/llama-4-maverick-17b-128e-instruct-fp8
+#   xai/grok-3
+# Override the model via env: CAB_LIVE_MODEL="openai/gpt-4.1".
+# The legacy `https://models.inference.ai.azure.com/chat/completions`
+# endpoint only exposed gpt-4o(-mini) + Llama-3.1; the newer one
+# requires the model id to be prefixed (`openai/`, `meta/`, etc.).
+GITHUB_MODELS_URL = os.environ.get(
+    "CAB_LIVE_LLM_URL",
+    "https://models.github.ai/inference/chat/completions",
+)
+DEFAULT_LIVE_MODEL = os.environ.get("CAB_LIVE_MODEL", "openai/gpt-5-chat")
 ARIA_SYSTEM_PROMPT_PATH = _APP_ROOT / "prompts" / "aria_system_prompt.txt"
 _DEFAULT_ARIA_PROMPT = (
     "You are Aria, a friendly AI VTuber on a live stream. "
@@ -122,6 +137,7 @@ def _build_real_llm_generate():
                 GITHUB_MODELS_URL,
                 headers={
                     "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github+json",
                     "Content-Type": "application/json",
                 },
                 json={
