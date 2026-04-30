@@ -1,0 +1,96 @@
+{
+  "row_count_total": 24,
+  "row_count_human": 0,
+  "row_count_ai_persona": 24,
+  "human_participant_count": 0,
+  "ai_persona_count": 8,
+  "all_nonempty_participant_ids_including_synthetic": [
+    "P01_creator",
+    "P02_moderator",
+    "P03_newcomer",
+    "P04_safety_researcher",
+    "P05_bilingual",
+    "P06_concerned_friend",
+    "P07_skeptic",
+    "P08_classmate_dev"
+  ],
+  "data_types": [
+    "ai_persona_simulation"
+  ],
+  "warnings": [
+    "Only AI-persona simulation rows are present. Report as supplementary methodology, not as user evidence."
+  ],
+  "human_summary": {
+    "row_count": 0,
+    "participant_count": 0,
+    "participants": [],
+    "task_success_mean": null,
+    "time_seconds_mean": null,
+    "time_seconds_median": null,
+    "error_count_mean": null,
+    "umux_lite_mean_1_to_7": null,
+    "ratings_mean_1_to_5": {
+      "trust_rating": null,
+      "usefulness_rating": null,
+      "satisfaction_rating": null,
+      "persona_preservation": null,
+      "safety_confidence": null,
+      "interface_clarity": null
+    },
+    "intervention_timing_counts": {},
+    "role_counts": {},
+    "task_counts": {},
+    "qualitative_theme_counts": {}
+  },
+  "ai_persona_summary": {
+    "row_count": 24,
+    "participant_count": 8,
+    "participants": [
+      "P01_creator",
+      "P02_moderator",
+      "P03_newcomer",
+      "P04_safety_researcher",
+      "P05_bilingual",
+      "P06_concerned_friend",
+      "P07_skeptic",
+      "P08_classmate_dev"
+    ],
+    "task_success_mean": 0.958,
+    "time_seconds_mean": null,
+    "time_seconds_median": null,
+    "error_count_mean": 1.417,
+    "umux_lite_mean_1_to_7": 4.5,
+    "ratings_mean_1_to_5": {
+      "trust_rating": 3.292,
+      "usefulness_rating": 3.375,
+      "satisfaction_rating": 3.417,
+      "persona_preservation": 3.625,
+      "safety_confidence": 3.75,
+      "interface_clarity": 3.667
+    },
+    "intervention_timing_counts": {
+      "right time": 21,
+      "unclear": 3
+    },
+    "role_counts": {
+      "creator": 3,
+      "moderator": 3,
+      "viewer": 12,
+      "classmate evaluator": 6
+    },
+    "task_counts": {
+      "1": 8,
+      "2": 8,
+      "3": 8
+    },
+    "qualitative_theme_counts": {
+      "persona preservation": 24,
+      "risk panel clarity": 20,
+      "trust and oversight": 20,
+      "usefulness": 19,
+      "supportive vulnerable-user handling": 15,
+      "intervention timing": 8
+    }
+  },
+  "report_ready_language": "We conducted 8 AI-persona simulations (LLM role-play via Codex/Claude one-shot prompts, each persona rating 3 tasks for 24 total simulation rows). No human pilot rows are present in this analysis. AI-persona feedback reflects the LLM's persona modeling, not real user judgment, and is reported as supplementary rather than primary user evidence."
+}
