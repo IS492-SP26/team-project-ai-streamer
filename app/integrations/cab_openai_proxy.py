@@ -30,6 +30,7 @@ Provenance: 2026-04-29. CP4 live demo integration layer.
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
@@ -58,7 +59,7 @@ if str(_APP_ROOT) not in sys.path:
     sys.path.insert(0, str(_APP_ROOT))
 
 from fastapi import FastAPI, HTTPException, Request  # noqa: E402
-from fastapi.responses import JSONResponse  # noqa: E402
+from fastapi.responses import JSONResponse, StreamingResponse  # noqa: E402
 
 from pipeline.cab_pipeline import deterministic_mock_llm, run_cab_turn  # noqa: E402
 
@@ -95,6 +96,53 @@ def _split_messages(messages: List[Dict[str, Any]]) -> tuple[Optional[str], List
         if role in {"user", "assistant", "system"}:
             history.append({"role": role, "content": str(m.get("content", ""))})
     return (str(latest) if latest is not None else None), history
+
+
+def _build_streaming_response(
+    text: str,
+    *,
+    model: str = MODEL_ID,
+    chunk_size: int = 24,
+) -> StreamingResponse:
+    """Return an OpenAI-compatible SSE stream of `text`.
+
+    cab_pipeline produces the full response synchronously, but OpenAI
+    clients (notably Open-LLM-VTuber's openai_compatible_llm) iterate
+    chunks via `aiter_lines()` and never render the message if a single
+    JSON arrives. We slice the cab response into ~24-char chunks and
+    emit them as `data: {…}` SSE events, then `data: [DONE]`. This
+    makes the avatar lip-sync and full-text events fire normally.
+    """
+    completion_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
+    created = int(time.time())
+
+    def _event(delta: Dict[str, Any], finish: Optional[str] = None) -> str:
+        chunk = {
+            "id": completion_id,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": model,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": delta,
+                    "finish_reason": finish,
+                }
+            ],
+        }
+        return f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+
+    async def _gen():
+        # Initial role chunk so the openai client knows it's an assistant turn.
+        yield _event({"role": "assistant", "content": ""})
+        if text:
+            for i in range(0, len(text), chunk_size):
+                yield _event({"content": text[i : i + chunk_size]})
+        # Final chunk: empty delta, finish_reason=stop.
+        yield _event({}, finish="stop")
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(_gen(), media_type="text/event-stream")
 
 
 def _build_chat_response(
@@ -223,6 +271,8 @@ async def chat_completions(request: Request) -> JSONResponse:
     # Compute turn number from history (count of user messages including this one).
     turn_number = sum(1 for m in messages if m.get("role") == "user")
 
+    want_stream = bool(body.get("stream"))
+
     if mode == "baseline":
         text = deterministic_mock_llm(latest_user, history, mode="baseline")
         logger.info(
@@ -232,6 +282,8 @@ async def chat_completions(request: Request) -> JSONResponse:
             latest_user[:80],
             text[:80],
         )
+        if want_stream:
+            return _build_streaming_response(text)
         return JSONResponse(
             _build_chat_response(
                 text,
@@ -266,9 +318,12 @@ async def chat_completions(request: Request) -> JSONResponse:
         bool(wellbeing_fired),
         latest_user[:80],
     )
+    final_text = trace.get("ai_response_final", "")
+    if want_stream:
+        return _build_streaming_response(final_text)
     return JSONResponse(
         _build_chat_response(
-            trace.get("ai_response_final", ""),
+            final_text,
             extra={
                 "mode": "cab",
                 "session_id": session_id,
