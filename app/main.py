@@ -24,6 +24,7 @@ except ImportError as e:
 from module_a.autonomy_policy import decide_action
 from module_a.mediation import apply_mediation
 from module_a.risk_tracker import update_risk_from_module_c
+from data.logger import init_db, log_turn
 
 # ---------------------------------------------------------------------------
 # GitHub Models API (OpenAI-compatible)
@@ -33,6 +34,17 @@ GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions"
 DEFAULT_MODEL = "gpt-4o-mini"
 
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
+_TELEMETRY_DB_PATH = os.path.join(_APP_DIR, "data", "telemetry.db")
+
+# Migrate the telemetry schema once at import time, so the first turn does
+# not race against schema initialization (verifier finding 2026-04-29).
+# This is idempotent: init_db checks if columns exist before ALTER TABLE.
+try:
+    init_db(_TELEMETRY_DB_PATH)
+except Exception:
+    # Don't block the pipeline on telemetry setup; logging will be skipped
+    # gracefully later if the DB really is unwritable.
+    pass
 
 _DEFAULT_ARIA_PROMPT = (
     "You are Aria, a friendly AI VTuber on a live stream.\n"
@@ -166,18 +178,18 @@ def run_pipeline(user_message: str, session_state: Dict[str, Any]) -> Dict[str, 
         "mode": session_state.get("mode", "cab_mock"),
     }
 
-    try:
-        from data.logger import init_db, log_turn
-        db_path = os.path.join(_APP_DIR, "data", "telemetry.db")
-        init_db(db_path)
-        if session_state.get("session_id"):
+    if session_state.get("session_id"):
+        try:
             log_turn(
                 session_id=session_state["session_id"],
                 turn_number=turn,
                 data=result,
-                db_path=db_path,
+                db_path=_TELEMETRY_DB_PATH,
             )
-    except Exception:
-        pass
+        except Exception:
+            # Telemetry must never crash the pipeline. The schema was
+            # already migrated at module import time (see top-of-file
+            # init_db call), so this except handles transient I/O only.
+            pass
 
     return result
