@@ -526,6 +526,15 @@ def main() -> None:
                 st.caption(f"Run: `{st.session_state.rt_session_label}`")
 
         st.markdown("---")
+        st.session_state.show_avatar = st.checkbox(
+            "Show Aria avatar (OLLV iframe)",
+            value=st.session_state.get("show_avatar", True),
+            help="Embeds http://localhost:12393 to the right of the chat. "
+                 "Requires Open-LLM-VTuber running.",
+            key="sidebar_show_avatar",
+        )
+
+        st.markdown("---")
         if st.button(
             "🔄 Reset session",
             use_container_width=True,
@@ -560,9 +569,35 @@ def main() -> None:
 
     _mode_banner()
 
-    # Chat history (manual + auto-played turns interleaved chronologically)
-    for m in st.session_state.messages:
-        _render_chat_message(m)
+    # Optional Aria avatar embed. Two-column split: chat on the left,
+    # Live2D Aria on the right when OLLV is up at :12393. Toggle visibility
+    # via session_state.show_avatar (sidebar checkbox below).
+    show_avatar = st.session_state.get("show_avatar", True)
+    if show_avatar:
+        chat_col, avatar_col = st.columns([3, 2])
+    else:
+        chat_col = st.container()
+        avatar_col = None
+
+    with chat_col:
+        # Chat history (manual + auto-played turns interleaved chronologically)
+        for m in st.session_state.messages:
+            _render_chat_message(m)
+
+    if avatar_col is not None:
+        with avatar_col:
+            st.markdown("### 🐱 Aria (Live2D)")
+            st.markdown(
+                '<iframe src="http://localhost:12393" width="100%" '
+                'height="540" style="border:0;border-radius:10px;" '
+                'allow="autoplay; microphone"></iframe>',
+                unsafe_allow_html=True,
+            )
+            st.caption(
+                "If the avatar is blank, Open-LLM-VTuber isn't running on "
+                "`:12393`. Start the full stack with "
+                "`./scripts/presentation_demo.sh` from the repo root."
+            )
 
     # Auto-advance tick. Only fires when ▶ Play is active.
     if st.session_state.rt_playing and st_autorefresh is not None:

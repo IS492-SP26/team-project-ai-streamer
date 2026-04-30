@@ -35,6 +35,17 @@ OLLV_DIR="${OLLV_DIR:-$HOME/Open-LLM-VTuber}"
 PACE="${PACE:-8}"
 HEADLESS="${1:-}"
 
+# Auto-pick GitHub Models token from gh CLI when GITHUB_TOKEN is unset.
+# This unlocks varied gpt-4o-mini responses through the proxy in CAB
+# mode; baseline mode keeps the deterministic mock unconditionally
+# (the demo punchline depends on the marker string).
+if [ -z "${GITHUB_TOKEN:-}" ] && command -v gh >/dev/null 2>&1; then
+    if _gh_token=$(gh auth token 2>/dev/null) && [ -n "$_gh_token" ]; then
+        export GITHUB_TOKEN="$_gh_token"
+        echo "[demo] picked up GITHUB_TOKEN from gh CLI (real LLM enabled in CAB mode)"
+    fi
+fi
+
 # ----------------------------------------------------------------------
 # preflight
 # ----------------------------------------------------------------------
@@ -56,33 +67,40 @@ fi
 echo "[demo] cleaning stale processes…"
 pkill -f cab_openai_proxy >/dev/null 2>&1 || true
 pkill -f "run_server\.py" >/dev/null 2>&1 || true
+pkill -f "streamlit run" >/dev/null 2>&1 || true
 for _ in 1 2 3 4 5 6; do
     busy=0
     lsof -nP -iTCP:8000 -sTCP:LISTEN >/dev/null 2>&1 && busy=1
     lsof -nP -iTCP:12393 -sTCP:LISTEN >/dev/null 2>&1 && busy=1
+    lsof -nP -iTCP:8501 -sTCP:LISTEN >/dev/null 2>&1 && busy=1
     [ "$busy" -eq 0 ] && break
     sleep 0.5
 done
 
 PROXY_LOG=/tmp/cab_proxy.log
 OLLV_LOG=/tmp/ollv.log
+STREAMLIT_LOG=/tmp/cab_streamlit.log
 DEMO_LOG=/tmp/cab_presentation.log
 : > "$PROXY_LOG"
 : > "$OLLV_LOG"
+: > "$STREAMLIT_LOG"
 : > "$DEMO_LOG"
 
 PROXY_PID=
 OLLV_PID=
+STREAMLIT_PID=
 
 cleanup() {
     echo
     echo "[demo] shutting down…"
-    [ -n "${OLLV_PID:-}" ]  && kill "$OLLV_PID"  2>/dev/null || true
-    [ -n "${PROXY_PID:-}" ] && kill "$PROXY_PID" 2>/dev/null || true
+    [ -n "${STREAMLIT_PID:-}" ] && kill "$STREAMLIT_PID" 2>/dev/null || true
+    [ -n "${OLLV_PID:-}" ]      && kill "$OLLV_PID"      2>/dev/null || true
+    [ -n "${PROXY_PID:-}" ]     && kill "$PROXY_PID"     2>/dev/null || true
     sleep 0.5
     pkill -f cab_openai_proxy >/dev/null 2>&1 || true
     pkill -f "run_server\.py" >/dev/null 2>&1 || true
-    echo "[demo] proxy + OLLV stopped."
+    pkill -f "streamlit run" >/dev/null 2>&1 || true
+    echo "[demo] proxy + OLLV + Streamlit stopped."
 }
 trap cleanup EXIT INT TERM
 
@@ -163,15 +181,53 @@ for i in $(seq 1 240); do  # 120s
 done
 [ "$ready" -ne 1 ] && { echo "[demo] OLLV did not respond in 120s." >&2; tail -30 "$OLLV_LOG" >&2; exit 5; }
 
-echo "[demo] ✅ stack ready. Aria UI: http://localhost:12393"
+echo "[demo] ✅ OLLV ready. Aria UI: http://localhost:12393"
+
+# ----------------------------------------------------------------------
+# Streamlit C-A-B governance dashboard (the right-half OBS panel)
+# ----------------------------------------------------------------------
+echo "[demo] starting Streamlit governance dashboard on :8501…"
+(
+    cd "$REPO_ROOT"
+    exec streamlit run app/frontend/app.py \
+        --server.port 8501 \
+        --server.headless true \
+        --browser.gatherUsageStats false
+) > "$STREAMLIT_LOG" 2>&1 &
+STREAMLIT_PID=$!
+
+st_ready=0
+for i in $(seq 1 60); do  # 30s
+    if curl -sS --max-time 1 http://127.0.0.1:8501/ >/dev/null 2>&1; then
+        st_ready=1
+        break
+    fi
+    if ! kill -0 "$STREAMLIT_PID" 2>/dev/null; then
+        echo "[demo] Streamlit process died:" >&2
+        tail -30 "$STREAMLIT_LOG" >&2
+        exit 6
+    fi
+    sleep 0.5
+done
+[ "$st_ready" -ne 1 ] && { echo "[demo] Streamlit did not respond in 30s." >&2; tail -30 "$STREAMLIT_LOG" >&2; exit 7; }
+echo "[demo] ✅ Streamlit ready: http://localhost:8501"
+
+echo
+echo "[demo] full stack:"
+echo "  • Aria avatar (OBS left half):     http://localhost:12393"
+echo "  • C-A-B dashboard (OBS right):     http://localhost:8501"
+echo "  • cab_openai_proxy (governance):   http://127.0.0.1:8000"
+echo
 
 if [ "$HEADLESS" != "--headless" ] && command -v open >/dev/null 2>&1; then
-    echo "[demo] opening Aria in default browser…"
+    echo "[demo] opening both UIs in default browser…"
     open "http://localhost:12393"
+    sleep 1
+    open "http://localhost:8501"
     sleep 3
 fi
 
-banner "READY — let the audience see the avatar load (5 second pause)"
+banner "READY — let the audience see both windows load (5 second pause)"
 sleep 5
 
 # ----------------------------------------------------------------------

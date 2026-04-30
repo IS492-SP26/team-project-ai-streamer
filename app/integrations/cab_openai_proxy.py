@@ -66,6 +66,85 @@ from pipeline.cab_pipeline import deterministic_mock_llm, run_cab_turn  # noqa: 
 MODEL_ID = "cab-aria"
 DEFAULT_DB_PATH = str(_APP_ROOT / "data" / "telemetry.db")
 
+# GitHub Models — same path used by main.run_pipeline. When GITHUB_TOKEN is
+# set in the environment, the proxy threads a real-LLM callable into
+# cab_pipeline so Aria's responses are varied gpt-4o-mini output instead of
+# the deterministic mock. When the token is absent the mock is still used —
+# slides will note "live LLM enabled" vs "offline deterministic" depending
+# on what's running. Baseline mode never uses the real LLM (the punchline
+# of the demo depends on the marker string).
+GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions"
+DEFAULT_LIVE_MODEL = os.environ.get("CAB_LIVE_MODEL", "gpt-4o-mini")
+ARIA_SYSTEM_PROMPT_PATH = _APP_ROOT / "prompts" / "aria_system_prompt.txt"
+_DEFAULT_ARIA_PROMPT = (
+    "You are Aria, a friendly AI VTuber on a live stream. "
+    "Stay cheerful, helpful, and in character. Keep chat replies short (1-3 sentences)."
+)
+
+
+def _load_aria_prompt() -> str:
+    if ARIA_SYSTEM_PROMPT_PATH.is_file():
+        try:
+            text = ARIA_SYSTEM_PROMPT_PATH.read_text(encoding="utf-8").strip()
+            if text:
+                return text
+        except OSError:
+            pass
+    return _DEFAULT_ARIA_PROMPT
+
+
+def _build_real_llm_generate():
+    """Return a callable cab_pipeline.run_cab_turn can use for generation
+    when GITHUB_TOKEN is set, or None when no token is available.
+
+    The callable falls back to deterministic_mock_llm on any HTTP failure
+    so a flaky network never crashes the demo.
+    """
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        return None
+    try:
+        import requests  # noqa: WPS433 — local import keeps base imports light
+    except ImportError:
+        logger.warning("real-LLM mode requested but `requests` is unavailable")
+        return None
+
+    system_prompt = _load_aria_prompt()
+
+    def _generate(user_message: str, history: List[Dict[str, str]]) -> str:
+        messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
+        for h in history:
+            if h.get("role") in ("user", "assistant"):
+                messages.append({"role": h["role"], "content": str(h.get("content", ""))})
+        messages.append({"role": "user", "content": user_message})
+        try:
+            resp = requests.post(
+                GITHUB_MODELS_URL,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": DEFAULT_LIVE_MODEL,
+                    "messages": messages,
+                    "max_tokens": 220,
+                    "temperature": 0.8,
+                },
+                timeout=20,
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+        except Exception as exc:  # pragma: no cover — flaky-network safety net
+            logger.warning(
+                "real-LLM call failed, falling back to deterministic mock: %s", exc
+            )
+            return deterministic_mock_llm(user_message, history, mode="cab")
+
+    return _generate
+
+
+_REAL_LLM_GENERATE = _build_real_llm_generate()
+
 app = FastAPI(
     title="C-A-B OpenAI-compatible Proxy",
     description=(
@@ -291,7 +370,9 @@ async def chat_completions(request: Request) -> JSONResponse:
             )
         )
 
-    # cab mode
+    # cab mode — use real LLM (gpt-4o-mini via GitHub Models) when
+    # GITHUB_TOKEN is set, else cab_pipeline falls back to its
+    # deterministic mock so the demo runs offline.
     trace = run_cab_turn(
         session_id=session_id,
         scenario_id=scenario_id,
@@ -301,6 +382,7 @@ async def chat_completions(request: Request) -> JSONResponse:
         user_message=latest_user,
         history=history,
         mode="cab",
+        llm_generate=_REAL_LLM_GENERATE,
         db_path=db_path,
         synthetic_or_real="live_proxy",
     )
