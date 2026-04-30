@@ -93,5 +93,7 @@ def test_output_scanner_blocks_unsafe_candidate():
 def test_user_study_analysis_synthetic_warning():
     rows = load_rows(ROOT / "docs/user_study/sample_synthetic_results.csv")
     summary = analyze(rows)
-    assert summary["participant_count"] == 0
+    # Synthetic rows must NOT be counted as either human or AI-persona.
+    assert summary["human_participant_count"] == 0
+    assert summary["ai_persona_count"] == 0
     assert any("Synthetic" in w for w in summary["warnings"])
