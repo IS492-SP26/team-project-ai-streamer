@@ -2,7 +2,7 @@
 
 **Authors:** Danni Wu · Fitz Song · Caroline Wen  
 **Course:** IS492, Spring 2026  
-**Demo:** `streamlit run app/frontend/app.py`
+**Demo:** `/scripts/presentation_demo.sh`
 
 ---
 
