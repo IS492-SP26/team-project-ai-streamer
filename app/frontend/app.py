@@ -465,6 +465,21 @@ def _render_sidebar() -> None:
         st.divider()
 
         # ---- Red-team auto-play ----
+        # Maps each scenario stem to a small badge: severity icon + a
+        # human label. Used to show the operator at a glance whether
+        # the selected scenario is benign / injection / wellbeing /
+        # multi-viewer rather than just the title-cased filename.
+        _SCENARIO_BADGES = {
+            "benign_livestream_chat":             ("🟢", "benign"),
+            "direct_injection":                   ("🔴", "injection"),
+            "indirect_injection":                 ("🔴", "injection"),
+            "persona_drift":                      ("🟠", "persona drift"),
+            "harmful_instruction_escalation":     ("🟠", "harmful escalation"),
+            "trust_building_escalation":          ("🟡", "social eng"),
+            "vulnerable_user_self_harm_disclosure": ("💜", "wellbeing"),
+            "mixed_multi_user_livestream":        ("🟡", "multi-viewer"),
+        }
+
         with st.expander("🎯 Red-team auto-play", expanded=False):
             paths = list_scenario_paths()
             if not paths:
@@ -482,19 +497,61 @@ def _render_sidebar() -> None:
                     format_func=lambda p: path_labels[p],
                     index=list(path_labels.keys()).index(current),
                     key="sidebar_scenario_select",
+                    label_visibility="collapsed",
                 )
                 if chosen != st.session_state.rt_scenario_path:
                     st.session_state.rt_scenario_path = chosen
+
+                # Scenario badge: severity emoji + short type label, so
+                # the operator sees the kind of attack at a glance.
+                stem = Path(chosen).stem if chosen else ""
+                emoji, label = _SCENARIO_BADGES.get(stem, ("⚪", "scenario"))
+                st.markdown(
+                    f'<div style="display:inline-flex;align-items:center;'
+                    f"gap:6px;padding:3px 10px;background:var(--cab-bg-card);"
+                    f"border-radius:6px;font-size:0.8rem;margin:6px 0 4px 0;"
+                    f'border:1px solid var(--cab-border);">'
+                    f"<span>{emoji}</span>"
+                    f'<span style="color:var(--cab-text-secondary);'
+                    f'font-weight:600;">{label}</span></div>',
+                    unsafe_allow_html=True,
+                )
+
                 st.session_state.rt_pace = st.slider(
-                    "Pace (sec/turn)",
+                    "Pace · seconds per turn",
                     min_value=2,
                     max_value=15,
                     value=int(st.session_state.rt_pace),
                     key="sidebar_pace_slider",
                 )
+
+                # Status pill: idle / running / done — clearer than
+                # peeking at button states.
+                if st.session_state.rt_playing:
+                    status_bg, status_text = "var(--cab-state-suspicious)", "▶ running"
+                elif st.session_state.rt_scenario_done:
+                    status_bg, status_text = "var(--cab-state-safe)", "✓ done"
+                elif st.session_state.rt_iterator is not None:
+                    status_bg, status_text = "var(--cab-state-off)", "⏸ paused"
+                else:
+                    status_bg, status_text = "var(--cab-state-off)", "idle"
+                st.markdown(
+                    f'<div style="display:flex;justify-content:space-between;'
+                    f"align-items:center;padding:5px 10px;margin:4px 0 8px 0;"
+                    f"background:var(--cab-bg-card);border-radius:6px;"
+                    f'border-left:3px solid {status_bg};">'
+                    f'<span style="font-size:0.75rem;color:var(--cab-text-secondary);">Status</span>'
+                    f'<span style="font-size:0.8rem;font-weight:700;color:var(--cab-text-primary);">{status_text}</span>'
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+
                 cols = st.columns(3)
                 with cols[0]:
-                    if st.button("▶ Play", type="primary", use_container_width=True, key="sidebar_play"):
+                    if st.button("▶ Play", type="primary",
+                                 use_container_width=True,
+                                 key="sidebar_play",
+                                 disabled=st.session_state.rt_playing):
                         _start_red_team_run()
                 with cols[1]:
                     if st.button(
@@ -506,13 +563,13 @@ def _render_sidebar() -> None:
                     ):
                         st.session_state.rt_playing = False
                 with cols[2]:
-                    if st.button("⏭", use_container_width=True, key="sidebar_step", help="Manually advance one turn."):
+                    if st.button("⏭", use_container_width=True,
+                                 key="sidebar_step",
+                                 help="Advance one turn (manual step)."):
                         if st.session_state.rt_iterator is None and not st.session_state.rt_scenario_done:
                             _start_red_team_run()
                             st.session_state.rt_playing = False
                         _advance_red_team_one()
-                if st.session_state.rt_session_label:
-                    st.caption(f"`{st.session_state.rt_session_label}`")
 
         # ---- Example messages ----
         with st.expander("💬 Example messages", expanded=False):
@@ -1128,7 +1185,25 @@ def main() -> None:
                 "Flip Pipeline mode (sidebar) and ▶ Play to compare."
             )
 
-    # ---------- right column: risk pill → Aria iframe → expanders ----------
+        # Detail expanders live UNDER the transcript on the left so the
+        # right column stays focused on Aria + the latest verdict, and
+        # the page bottoms out at roughly the same vertical mark on both
+        # sides (visual balance).
+        with st.expander("🔬 Pipeline detail (last turn)", expanded=False):
+            if st.session_state.events:
+                latest = st.session_state.events[-1]
+                ld = latest.get("layer_details")
+                if ld:
+                    render_pipeline_animation(ld, theme)
+                else:
+                    st.caption("No layer details on this turn.")
+            else:
+                st.caption("No turns yet.")
+
+        with st.expander("📋 Recent events", expanded=False):
+            render_event_log(st.session_state.events, theme)
+
+    # ---------- right column: verdict pill → Aria iframe ----------
     with col_right:
         # Risk status pill goes FIRST so it stays visible above the fold —
         # the iframe is 540px tall and would otherwise push this off-screen.
@@ -1161,20 +1236,6 @@ def main() -> None:
                 "</div>",
                 unsafe_allow_html=True,
             )
-
-        with st.expander("🔬 Pipeline detail (last turn)", expanded=False):
-            if st.session_state.events:
-                latest = st.session_state.events[-1]
-                ld = latest.get("layer_details")
-                if ld:
-                    render_pipeline_animation(ld, theme)
-                else:
-                    st.caption("No layer details on this turn.")
-            else:
-                st.caption("No turns yet.")
-
-        with st.expander("📋 Recent events", expanded=False):
-            render_event_log(st.session_state.events, theme)
 
     # ============================== auto-advance ==============================
     if st.session_state.rt_playing and st_autorefresh is not None:
