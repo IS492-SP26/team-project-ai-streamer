@@ -126,35 +126,38 @@ Task definitions: `docs/user_study/personas/_tasks.json`
 ### Full reproduction sequence
 
 ```bash
-# Step 1 — Run tests
-python -m pytest
+# Step 1 — Install dependencies (run from repo root)
+cd app && pip install -r requirements.txt && cd ..
+# On Windows: py -m pip install -r app/requirements.txt
 
 # Step 2 — Smoke test
 python app/smoke_test_cp4.py
+# On Windows: py app/smoke_test_cp4.py
 
-# Step 3 — Run a single scenario (example: indirect injection, CAB mode)
-python -m app.module_b.evaluation.scenario_runner \
-  --scenario app/eval/scenarios/indirect_injection.json \
-  --mode cab \
-  --db app/data/telemetry.db \
-  --out-json app/module_b/docs/indirect_injection_cab_trace.json
+# Step 3 — Run full test suite
+python -m pytest
+# On Windows: py -m pytest
 
-# Step 4 — Run full automated evaluation
+# Step 4 — Run full automated evaluation (no API key needed)
 python -m app.module_b.evaluation.run_cp4_eval \
   --db app/data/telemetry.db \
   --out app/module_b/docs/eval_run_summary.md
+# On Windows: py -m app.module_b.evaluation.run_cp4_eval ...
 
-# Step 5 — Run user study analysis
+# Step 5 — Run multi-seed evaluation (bash only)
+./scripts/run_cp4_multi_seed.sh
+# Note: requires bash (macOS/Linux only). On Windows skip this step —
+# seed variant files are pre-committed in app/module_b/docs/.
+
+# Step 6 — Run user study analysis
 python docs/user_study/analyze_user_study.py \
   --input docs/user_study/raw_user_study_results.csv \
   --out docs/user_study/user_study_summary.md
 
-# Step 6 — Launch Streamlit demo
-streamlit run app/main.py
-# If this fails, fall back to docs/user_study/TASK_SHEET.md
-```
-app/smoke_test.py                          | Quick smoke test for pipeline integrity
-app/module_b/evaluation/scenario_runner.py | Single-scenario runner with JSON trace output
+# Step 7 — Launch Streamlit demo (requires GITHUB_TOKEN in .env)
+cp .env.example .env   # then fill in GITHUB_TOKEN
+python -m streamlit run app/main.py
+# If LLM unavailable, system falls back to deterministic mock automatically
 
 ### Key scripts reference
 
