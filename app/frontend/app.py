@@ -218,19 +218,28 @@ def _render_aria_iframe_block() -> None:
     # gives generous headroom (avatar ~574px + controls 86px) so the
     # controls never clip even on tighter Chakra reflows.
     #
-    # margin-bottom: 28px (was 16) creates a clear visual gap between
-    # the iframe's bottom edge and the next Streamlit element (Recent
-    # events expander) so the OLLV controls and the expander button
-    # don't read as "stuck together". User flagged the visual collision
-    # multiple times — 28px is a hard, unmistakable break.
+    # Below the iframe we render an EXPLICIT VISUAL SEPARATOR (a thin
+    # horizontal rule with a soft glow). The 28px margin-bottom alone
+    # was perceptually insufficient — OLLV's bright mic+hand buttons
+    # sit at the iframe bottom edge, the Recent-events expander sits
+    # 28px below, and on dark backgrounds 28px reads as "stuck
+    # together". The hr makes the boundary unambiguous.
     st.markdown(
         '<iframe id="aria_iframe" '
         'src="http://localhost:12393" '
         'width="100%" height="660" '
         'style="border:0;border-radius:14px;background:#0d1117;'
         'box-shadow:0 4px 18px rgba(0,0,0,0.18);display:block;'
-        'margin-bottom:28px;" '
-        'allow="autoplay; microphone; camera"></iframe>',
+        'margin-bottom:24px;" '
+        'allow="autoplay; microphone; camera"></iframe>'
+        # Strong visual divider — was 1px hr, now a 2px line in the
+        # accent color with generous margin so the OLLV controls
+        # (bright mic + hand buttons) clearly belong to the iframe and
+        # the Recent-events expander clearly belongs to Streamlit.
+        # Effective gap: 24 (iframe margin) + 2 (hr) + 32 (hr margin)
+        # = 58px total perceptual break.
+        '<hr style="border:0;border-top:2px solid var(--cab-state-suspicious);'
+        'margin:0 0 32px 0;opacity:0.35;border-radius:1px;" />',
         unsafe_allow_html=True,
     )
 
@@ -1091,7 +1100,15 @@ def main() -> None:
     _render_compact_stats_strip(st.session_state.stats)
 
     # ============================== 2-column main ==============================
-    col_left, col_right = st.columns([55, 45], gap="medium")
+    # Column ratio 62:38 (was 55:45). At wider viewports the previous
+    # 45% right column let the Aria iframe expand to ~830px wide, which
+    # tripped OLLV's responsive breakpoint into a multi-pane "chat
+    # tools + Aria PiP" layout (Aria shrunk to a thumbnail). Forcing
+    # the right column to 38% keeps the iframe at ~620-680px wide
+    # across reasonable viewports, which keeps OLLV in its single-pane
+    # Aria-primary layout. The transcript on the left gets more space
+    # too, which fits longer turn entries better.
+    col_left, col_right = st.columns([62, 38], gap="medium")
 
     # ---------- left column: echo transcript (or local-mode chat) ----------
     with col_left:
@@ -1101,12 +1118,13 @@ def main() -> None:
             _section_header("💬 Local chat")
 
         # Match the right column's combined height: verdict-pill block
-        # (~80px) + Aria header (~30px) + Aria iframe (660px + 28px
-        # margin-bottom) ≈ 798px. Transcript container uses 720 which
-        # together with the section header (~30px) and Pipeline-detail
-        # collapsed expander (~50px) lands the LEFT column at roughly
-        # the same y as the RIGHT column's Recent-events expander.
-        transcript_height = 720 if st.session_state.echo_mode else 480
+        # (~80px) + Aria header (~30px) + Aria iframe (660 + 18 margin
+        # + 1px hr + 24 hr-margin = ~723px iframe-section). Transcript
+        # container uses 730 which together with the section header
+        # (~30px) and the collapsed Pipeline-detail expander (~50px)
+        # bottoms the LEFT column at roughly the same y as the RIGHT
+        # column's Recent-events expander.
+        transcript_height = 730 if st.session_state.echo_mode else 480
         chat_box = st.container(height=transcript_height)
         with chat_box:
             if not st.session_state.events:
