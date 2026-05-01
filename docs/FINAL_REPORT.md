@@ -363,33 +363,33 @@ Seeds 1 and 2 produced identical traces. Diagnosis: `harmful_verb_no_target` sig
 
 ### Appendix E — Reproduction Instructions
 
-# Step 1 — Install dependencies (run from repo root)
+Step 1 — Install dependencies (run from repo root)
 cd app && pip install -r requirements.txt && cd ..
-# On Windows: py -m pip install -r app/requirements.txt
+On Windows: py -m pip install -r app/requirements.txt
 
-# Step 2 — Smoke test
+Step 2 — Smoke test
 python app/smoke_test_cp4.py
-# On Windows: py app/smoke_test_cp4.py
+On Windows: py app/smoke_test_cp4.py
 
 # Step 3 — Run full test suite
 python -m pytest
-# On Windows: py -m pytest
+On Windows: py -m pytest
 
 # Step 4 — Set environment variable (required for live LLM only)
 export GITHUB_TOKEN=your_token_here        # macOS/Linux
-# On Windows: copy .env.example .env, then fill in GITHUB_TOKEN in .env
+On Windows: copy .env.example .env, then fill in GITHUB_TOKEN in .env
 
 # Step 5 — Run full automated evaluation (no API key needed)
 python -m app.module_b.evaluation.run_cp4_eval \
   --db app/data/telemetry.db \
   --out app/module_b/docs/eval_run_summary.md
-# On Windows: py -m app.module_b.evaluation.run_cp4_eval ...
+On Windows: py -m app.module_b.evaluation.run_cp4_eval ...
 
 # Step 6 — Run multi-seed evaluation (bash only)
 ./scripts/run_cp4_multi_seed.sh
-# Output: app/module_b/docs/eval_run_summary_seed{0,1,2}.json/.md
-# Note: requires bash (macOS/Linux only). On Windows skip this step —
-# seed variant files are pre-committed in app/module_b/docs/.
+Output: app/module_b/docs/eval_run_summary_seed{0,1,2}.json/.md
+Note: requires bash (macOS/Linux only). On Windows skip this step —
+seed variant files are pre-committed in app/module_b/docs/.
 
 # Step 7 — Run user study analysis
 python docs/user_study/analyze_user_study.py \
