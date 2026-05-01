@@ -7,7 +7,7 @@
 
 ### Running the System
 
-The system runs locally via Streamlit. No cloud deployment is required — all evaluation is fully reproducible offline.
+The system runs locally via Streamlit. No cloud deployment is required, all evaluation is fully reproducible offline.
 
 **Quickstart (no API key needed):**
 ```bash
