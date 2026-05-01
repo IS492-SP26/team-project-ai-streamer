@@ -385,6 +385,10 @@ python ../docs/user_study/analyze_user_study.py \
 
 # Run full test suite
 pytest -q
+
+# Run multi-seed evaluation to generate per-seed trace files
+./scripts/run_cp4_multi_seed.sh
+# Output: app/module_b/docs/eval_run_summary_seed{0,1,2}.json/.md
 ```
 
 Full setup: `INSTALL.md` and `CP4_RUN_COMMANDS.md`. Live demo stack: `scripts/presentation_demo.sh`.
