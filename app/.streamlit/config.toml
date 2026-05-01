@@ -1,8 +1,12 @@
 [server]
 headless = true
 
-# Note: do NOT pin [theme] base here. When base is explicitly set,
-# Streamlit hides the System / Light / Dark toggle from the kebab menu.
-# Our `_is_dark_mode()` defaults to LIGHT when theme.base is unset, so
-# leaving this open lets users flip Streamlit's native chrome from the
-# menu while our paper palette stays the canonical look.
+[theme]
+# Pin to "light" because the canonical handoff-2 look is paper-and-ink.
+# Side effect (intentional): Streamlit's kebab menu also hides its
+# System / Light / Dark toggle. That toggle would only flip Streamlit's
+# native chrome — our CAB palette is keyed off `st.get_option("theme.base")`
+# which the runtime menu does NOT update — so a user clicking "Dark"
+# produced a half-flipped UI (dark sidebar, light CAB body). Hiding the
+# toggle is the simpler fix until a proper CAB-native dark mode is built.
+base = "light"
