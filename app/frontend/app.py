@@ -237,13 +237,21 @@ def _render_aria_iframe_block() -> None:
     # OLLV-pinned bottom-control bar) is fully on-screen on any
     # viewport down to ~720px tall, while still using up to 660px on
     # large displays.
+    # iframe background uses var(--cab-bg-card) so the boundary glow
+    # blends with the surrounding card on either theme. (OLLV's
+    # internal content stays dark — it's a hardcoded Live2D scene —
+    # but the iframe ELEMENT itself should pick up our theme so the
+    # corners + shadow look right in light mode.)
+    # Height clamp bumped (480→540 floor, 660→720 ceiling, 280→240
+    # viewport reserve) so Aria fills more of the visible space and
+    # OLLV's natural bottom-control row is comfortably inside.
     st.markdown(
         '<iframe id="aria_iframe" '
         'src="http://localhost:12393" '
-        'width="100%" height="660" '
-        'style="border:0;border-radius:14px;background:#0d1117;'
+        'width="100%" height="720" '
+        'style="border:0;border-radius:14px;background:var(--cab-bg-card);'
         'box-shadow:0 4px 18px rgba(0,0,0,0.18);display:block;'
-        'height:clamp(480px, calc(100vh - 280px), 660px);'
+        'height:clamp(540px, calc(100vh - 240px), 720px);'
         'margin-bottom:24px;" '
         'allow="autoplay; microphone; camera"></iframe>'
         # Strong visual divider — was 1px hr, now a 2px line in the
@@ -591,26 +599,36 @@ def _render_sidebar() -> None:
                     unsafe_allow_html=True,
                 )
 
-                cols = st.columns(3)
+                # All three buttons are icon-only so they render at
+                # IDENTICAL width/height in their equal columns,
+                # regardless of sidebar width. Earlier "▶ Play" / "⏸
+                # Pause" / "⏭ Step" wrapped to two lines on narrow
+                # sidebars (e.g. "Paus\ne"), which made them visually
+                # unequal. Tooltips carry the action labels.
+                cols = st.columns(3, gap="small")
                 with cols[0]:
-                    if st.button("▶ Play", type="primary",
+                    if st.button("▶", type="primary",
                                  use_container_width=True,
                                  key="sidebar_play",
-                                 disabled=st.session_state.rt_playing):
+                                 disabled=st.session_state.rt_playing,
+                                 help="Play — start auto-play of the selected scenario."):
                         _start_red_team_run()
                 with cols[1]:
                     if st.button(
                         "⏸",
+                        type="primary",
                         use_container_width=True,
                         disabled=not st.session_state.rt_playing,
                         key="sidebar_pause",
-                        help="Pause the auto-play.",
+                        help="Pause — halt the auto-play.",
                     ):
                         st.session_state.rt_playing = False
                 with cols[2]:
-                    if st.button("⏭", use_container_width=True,
+                    if st.button("⏭",
+                                 type="primary",
+                                 use_container_width=True,
                                  key="sidebar_step",
-                                 help="Advance one turn (manual step)."):
+                                 help="Step — advance one turn manually."):
                         if st.session_state.rt_iterator is None and not st.session_state.rt_scenario_done:
                             _start_red_team_run()
                             st.session_state.rt_playing = False

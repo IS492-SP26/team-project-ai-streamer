@@ -111,14 +111,21 @@ def get_theme() -> Dict:
 
 
 def inject_theme_css(theme: Dict) -> None:
-    """Inject CSS that works with Streamlit's native theme selector.
+    """Inject CSS variables for the active theme.
 
-    Emits both light and dark CSS variable blocks. Streamlit's native
-    System/Light/Dark picker toggles ``[data-theme]`` on the root,
-    which activates the matching variable set automatically.
+    Previously this function emitted BOTH dark and light variable
+    blocks and tried to activate the light one via
+    ``:root[data-theme="light"]`` / ``.stApp[style*="white"]``. Modern
+    Streamlit doesn't reliably set those attributes, so the light
+    variables never activated even when the user picked Light Mode —
+    visible regression: Echo-transcript / Latest-verdict / stats-pill
+    section headers stayed dark on a white page.
+
+    Fix: trust ``get_theme()``. It already detects the active theme
+    via ``st.get_option("theme.base")``. Inject the corresponding
+    variable set DIRECTLY into ``:root`` so every var() reference
+    matches the chosen theme without selector contortions.
     """
-    d = DARK_THEME
-    l = LIGHT_THEME
 
     def _vars(t: Dict) -> str:
         return f"""
@@ -142,24 +149,10 @@ def inject_theme_css(theme: Dict) -> None:
 
     css = f"""
     <style>
-    /* Default: dark theme variables */
+    /* Active theme variables (chosen by get_theme() — see theme.py
+       docstring for why we don't use selector-based switching). */
     :root {{
-        {_vars(d)}
-    }}
-
-    /* Light override: Streamlit sets [data-theme="light"] or
-       light-mode background on .stApp when user picks Light */
-    :root[data-theme="light"],
-    .stApp[style*="background-color: rgb(255, 255, 255)"],
-    .stApp[style*="background-color: white"] {{
-        {_vars(l)}
-    }}
-
-    /* Also respond to prefers-color-scheme for System mode */
-    @media (prefers-color-scheme: light) {{
-        :root:not([data-theme="dark"]) {{
-            {_vars(l)}
-        }}
+        {_vars(theme)}
     }}
 
     /* ============================================================

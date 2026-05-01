@@ -181,7 +181,7 @@ def render_layer_breakdown(layer_details: Dict, theme: Optional[Dict] = None) ->
                     f" — Reassurances: **{reassurance}**"
                 )
                 st.markdown(
-                    f'&nbsp;&nbsp;&nbsp;&nbsp;<div style="background:#333;border-radius:4px;height:8px;width:200px;display:inline-block;">'
+                    f'&nbsp;&nbsp;&nbsp;&nbsp;<div style="background:var(--cab-border);border-radius:4px;height:8px;width:200px;display:inline-block;">'
                     f'<div style="background:{bar_color};border-radius:4px;height:8px;width:{pct * 200:.0f}px;"></div>'
                     f"</div>",
                     unsafe_allow_html=True,
@@ -260,7 +260,7 @@ def render_event_log(
                 )
                 st.markdown(
                     f"📖 Fiction score: **{fic_score:.1f}**/5.0"
-                    f' <div style="background:#333;border-radius:4px;height:6px;width:120px;display:inline-block;">'
+                    f' <div style="background:var(--cab-border);border-radius:4px;height:6px;width:120px;display:inline-block;">'
                     f'<div style="background:{bar_color};border-radius:4px;height:6px;width:{pct * 120:.0f}px;"></div>'
                     f"</div>",
                     unsafe_allow_html=True,
@@ -321,7 +321,7 @@ def render_pipeline_animation(
                     "#ef4444" if pct >= 1.0 else "#f59e0b" if pct >= 0.5 else "#22c55e"
                 )
                 bar_html = (
-                    f'<span style="display:inline-block;background:#333;border-radius:3px;'
+                    f'<span style="display:inline-block;background:var(--cab-border);border-radius:3px;'
                     f'height:6px;width:60px;vertical-align:middle;">'
                     f'<span style="display:block;background:{bar_c};border-radius:3px;'
                     f'height:6px;width:{pct * 60:.0f}px;"></span></span>'
