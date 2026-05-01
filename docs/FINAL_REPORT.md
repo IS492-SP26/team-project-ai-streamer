@@ -364,34 +364,40 @@ Seeds 1 and 2 produced identical traces. Diagnosis: `harmful_verb_no_target` sig
 ### Appendix E — Reproduction Instructions
 
 ```bash
-# Install dependencies
-cd app && pip install -r requirements.txt
+# Step 1 — Install dependencies (run from repo root)
+cd app && pip install -r requirements.txt && cd ..
 
-# Set environment variable (omit for mock/deterministic mode)
+# Step 2 — Set environment variable (omit for mock/deterministic mode)
 export GITHUB_TOKEN=your_token_here
 
-# Run Streamlit demo
-streamlit run frontend/app.py
+# Step 3 — Smoke test
+python app/smoke_test_cp4.py
 
-# Run automated red-team evaluation (no API key needed)
-python -m module_b.evaluation.run_cp4_eval \
-  --db data/telemetry.db \
-  --out module_b/docs/eval_run_summary.md
+# Step 4 — Run full test suite
+python -m pytest
 
-# Run user study analysis
-python ../docs/user_study/analyze_user_study.py \
-  --input ../docs/user_study/raw_user_study_results.csv \
-  --out ../docs/user_study/user_study_summary.md
+# Step 5 — Run full automated evaluation (no API key needed)
+python -m app.module_b.evaluation.run_cp4_eval \
+  --db app/data/telemetry.db \
+  --out app/module_b/docs/eval_run_summary.md
 
-# Run full test suite
-pytest -q
-
-# Run multi-seed evaluation to generate per-seed trace files
+# Step 6 — Run multi-seed evaluation
 ./scripts/run_cp4_multi_seed.sh
 # Output: app/module_b/docs/eval_run_summary_seed{0,1,2}.json/.md
+
+# Step 7 — Run user study analysis
+python docs/user_study/analyze_user_study.py \
+  --input docs/user_study/raw_user_study_results.csv \
+  --out docs/user_study/user_study_summary.md
+
+# Step 8 — Launch Streamlit demo
+streamlit run app/main.py
+
+# Step 9 — Full live demo stack (optional)
+./scripts/presentation_demo.sh
 ```
 
-Full setup: `INSTALL.md` and `CP4_RUN_COMMANDS.md`. Live demo stack: `scripts/presentation_demo.sh`.
+Full setup and run commands:  `CP4_RUN_COMMANDS.md` (repo root).
 
 ### Appendix F — Team Contributions & AI Tool Disclosure
 
