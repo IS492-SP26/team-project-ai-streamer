@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Open-LLM-Vtuber</title>
+    <!--
+      C-A-B integration: Monkey-patch WebSocket BEFORE the React bundle
+      loads so we can capture the /client-ws connection the app opens.
+      With that reference, the Streamlit dashboard (different origin,
+      port 8501) can postMessage `CAB_INJECT_CHAT` events into THIS
+      iframe and we'll forward them through the SAME WebSocket the app
+      is using — so the avatar reacts to example buttons, red-team
+      auto-play, and any other parent-driven message, even though
+      Streamlit cannot directly access this iframe's DOM.
+    -->
+    <!--
+      C-A-B demo CSS overrides: hide OLLV's chakra-toast notifications
+      and any VAD-warning subtitle overlay. These obscure Aria during
+      live demos and never carry information the audience needs (the
+      governance dashboard at :8501 is the canonical audit surface).
+    -->
+    <style>
+      /* Hide all chakra toasts ("New chat history created",
+         VAD warnings, etc.) — they overlay the avatar. */
+      .chakra-toast__root,
+      [class*="chakra-toast"] {
+        display: none !important;
+      }
+      /* Pin OLLV's bottom-control bar (idle pill + mic/hand buttons +
+         message textarea) to the iframe viewport's bottom edge.
+
+         MULTIPLE FALLBACK SELECTORS so this works regardless of
+         OLLV version, hashed class drift, or `:has()` browser
+         support:
+           1. `.chakra-stack.css-1cckfm0`           — exact hashed class
+           2. `.chakra-stack:has(textarea)`         — modern :has()
+           3. `body > div > div:last-child > .chakra-stack` — structural
+         Any one matching is sufficient.
+
+         All three apply the SAME fixed-position style so OLLV's
+         control bar is always anchored 12px above the iframe's
+         bottom edge regardless of how the avatar area reflows
+         under narrower widths / different DPRs. This is the demo's
+         durable fix for "controls cut at half" — the bar physically
+         cannot overflow the iframe boundary because it's positioned
+         relative to the iframe viewport, not OLLV's flex container. */
+      .chakra-stack.css-1cckfm0,
+      .chakra-stack:has(textarea),
+      .chakra-stack:has(.chakra-textarea),
+      div[class*="chakra-stack"]:has(textarea) {
+        position: fixed !important;
+        bottom: 12px !important;
+        left: 16px !important;
+        right: 16px !important;
+        z-index: 50;
+        background: rgba(20, 22, 30, 0.88) !important;
+        backdrop-filter: blur(8px);
+        border-radius: 14px !important;
+        padding: 8px 12px !important;
+        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35) !important;
+      }
+      /* When the controls are pinned, give the rest of the OLLV body
+         room above them so the avatar doesn't render UNDER the bar. */
+      body { padding-bottom: 110px; }
+    </style>
+    <script>
+      // MutationObserver that hides any added DOM node whose text
+      // contains the VAD-warning string. The string is large and
+      // centered on the avatar in OLLV's default rendering, which
+      // hijacks the same overlay layer Aria's spoken-text caption uses.
+      // We can't disable VAD via URL params, so we treat it at the
+      // render layer.
+      (function () {
+        var VAD_STRINGS = [
+          "Voice detected but too brief",
+          "speaking louder",
+          "speech threshold",
+        ];
+        function maybeHide(node) {
+          if (!(node instanceof Element)) return;
+          var txt = node.textContent || "";
+          for (var i = 0; i < VAD_STRINGS.length; i++) {
+            if (txt.indexOf(VAD_STRINGS[i]) !== -1) {
+              node.style.display = "none";
+              return;
+            }
+          }
+        }
+        var obs = new MutationObserver(function (mutations) {
+          mutations.forEach(function (m) {
+            m.addedNodes.forEach(maybeHide);
+          });
+        });
+        // Start observing once body exists.
+        function attach() {
+          if (!document.body) return setTimeout(attach, 50);
+          obs.observe(document.body, { childList: true, subtree: true });
+          // Also sweep any pre-existing matches.
+          document.body.querySelectorAll("*").forEach(maybeHide);
+        }
+        attach();
+      })();
+    </script>
+    <script>
+      (function () {
+        var orig = window.WebSocket;
+        window._cab_ollv_ws = null;
+        window._cab_ws_log = [];
+        // Pending injects queue — postMessages that arrived before the
+        // OLLV /client-ws WebSocket was OPEN. Drained on WS open so
+        // example/red-team buttons fire reliably even right after the
+        // iframe re-mounts.
+        var pending = [];
+
+        function drainPending() {
+          var ws = window._cab_ollv_ws;
+          if (!ws || ws.readyState !== orig.OPEN) return;
+          // Slight delay so OLLV's server-side init (set-model-and-conf,
+          // group-update) lands before we send text-input. Without this,
+          // OLLV ignores the first few text-input messages.
+          while (pending.length) {
+            var text = pending.shift();
+            try {
+              ws.send(JSON.stringify({ type: "text-input", text: text }));
+              window._cab_ws_log.push("drained: " + text.slice(0, 80));
+              console.log("[CAB] drained pending inject:", text);
+            } catch (err) {
+              console.warn("[CAB] drain failed:", err);
+            }
+          }
+        }
+
+        function PatchedWS(url, protocols) {
+          var ws = protocols ? new orig(url, protocols) : new orig(url);
+          try {
+            if (typeof url === "string" && url.indexOf("client-ws") !== -1) {
+              window._cab_ollv_ws = ws;
+              window._cab_ws_log.push("captured OLLV ws: " + url);
+              console.log("[CAB] captured OLLV /client-ws connection");
+              // When the WS opens, give OLLV a moment to finish its own
+              // init handshake, then drain any buffered injects.
+              ws.addEventListener("open", function () {
+                window._cab_ws_log.push("ws open; will drain in 800ms");
+                setTimeout(drainPending, 800);
+              });
+            }
+          } catch (e) {}
+          return ws;
+        }
+        PatchedWS.prototype = orig.prototype;
+        PatchedWS.CONNECTING = orig.CONNECTING;
+        PatchedWS.OPEN = orig.OPEN;
+        PatchedWS.CLOSING = orig.CLOSING;
+        PatchedWS.CLOSED = orig.CLOSED;
+        window.WebSocket = PatchedWS;
+
+        window.addEventListener("message", function (e) {
+          var d = e.data || {};
+          if (d.type === "CAB_INJECT_CHAT" && typeof d.text === "string") {
+            var ws = window._cab_ollv_ws;
+            if (ws && ws.readyState === orig.OPEN) {
+              try {
+                ws.send(JSON.stringify({ type: "text-input", text: d.text }));
+                window._cab_ws_log.push("injected: " + d.text.slice(0, 80));
+                console.log("[CAB] injected text-input via captured ws:", d.text);
+              } catch (err) {
+                console.warn("[CAB] inject failed:", err);
+              }
+            } else {
+              // Buffer for later drain. Avoids dropping injects that
+              // arrive while OLLV's React bundle / WS handshake is
+              // still warming up after a fresh iframe mount.
+              pending.push(d.text);
+              window._cab_ws_log.push(
+                "buffered (ws state " +
+                  (ws ? ws.readyState : "no-ws") +
+                  "): " +
+                  d.text.slice(0, 80)
+              );
+              console.log(
+                "[CAB] buffered inject; will drain when WS opens:",
+                d.text
+              );
+            }
+          } else if (d.type === "CAB_PING") {
+            try {
+              (e.source || window.parent).postMessage(
+                {
+                  type: "CAB_PONG",
+                  capturedWS: !!window._cab_ollv_ws,
+                  wsState: window._cab_ollv_ws
+                    ? window._cab_ollv_ws.readyState
+                    : -1,
+                  pendingCount: pending.length,
+                },
+                "*"
+              );
+            } catch (err) {}
+          }
+        });
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/main-nu7uwxNJ.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/main-QEkl09-0.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

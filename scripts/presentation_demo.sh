@@ -212,6 +212,19 @@ banner "STEP 0 — booting C-A-B proxy + Open-LLM-VTuber + Streamlit"
 echo "[demo] starting proxy (CAB mode)…"
 start_proxy cab
 
+# Re-apply the C-A-B monkey-patch to OLLV's frontend/index.html before
+# launch. The script is idempotent: it overwrites with our canonical
+# patched version (toast-hide CSS + position:fixed pin for the bottom-
+# control bar + WebSocket inject bridge). Without this step a freshly
+# cloned OLLV would serve an unpatched index.html and several known UX
+# regressions return ("controls cut at half", chakra-toast overlay,
+# example buttons not driving Aria).
+echo "[demo] applying C-A-B monkey-patch to OLLV frontend…"
+OLLV_PATH="$OLLV_DIR" "$REPO_ROOT/scripts/apply_ollv_patch.sh" >> "$OLLV_LOG" 2>&1 || {
+    echo "[demo] WARN: OLLV patch step failed (non-fatal). Running unpatched OLLV." >&2
+    tail -5 "$OLLV_LOG" >&2 || true
+}
+
 echo "[demo] starting Open-LLM-VTuber on :12393 (allow ~30s on first run)…"
 (
     cd "$OLLV_DIR"

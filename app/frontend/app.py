@@ -224,12 +224,26 @@ def _render_aria_iframe_block() -> None:
     # sit at the iframe bottom edge, the Recent-events expander sits
     # 28px below, and on dark backgrounds 28px reads as "stuck
     # together". The hr makes the boundary unambiguous.
+    # The CSS `height: clamp(480px, calc(100vh - 280px), 660px)`
+    # overrides the html `height="660"` attribute and makes the iframe
+    # adapt to short viewports. Without this override, on a 14"
+    # MacBook viewport (~888px tall) the 660px iframe + 280px of
+    # page header overflows the viewport bottom — OLLV's natural
+    # bottom-control row ends up at the visible viewport edge and
+    # the iframe's own bottom (with its border-radius / shadow)
+    # is below the fold, which the user reads as "controls are stuck
+    # to the bottom of the visible area" / "卡成一半". Clamping the
+    # iframe to viewport - 280px guarantees the iframe (including the
+    # OLLV-pinned bottom-control bar) is fully on-screen on any
+    # viewport down to ~720px tall, while still using up to 660px on
+    # large displays.
     st.markdown(
         '<iframe id="aria_iframe" '
         'src="http://localhost:12393" '
         'width="100%" height="660" '
         'style="border:0;border-radius:14px;background:#0d1117;'
         'box-shadow:0 4px 18px rgba(0,0,0,0.18);display:block;'
+        'height:clamp(480px, calc(100vh - 280px), 660px);'
         'margin-bottom:24px;" '
         'allow="autoplay; microphone; camera"></iframe>'
         # Strong visual divider — was 1px hr, now a 2px line in the
