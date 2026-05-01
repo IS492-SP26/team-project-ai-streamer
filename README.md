@@ -16,6 +16,8 @@ https://canvas.illinois.edu/courses/64886/pages/checkpoint-number-4-presentation
 
 This repository implements a three-layer research prototype (C-A-B) designed to operationalize security and governance mechanisms for AI agents operating in high-tempo, adversarial livestream chat environments. Rather than proposing a new model architecture, this project focuses on system-level integration: translating ideas from prompt-injection defense, guardrails, and automated red-teaming into a deployable and evaluable pipeline for livestream contexts, which is a system-level integration and evaluation framework tailored to adversarial, multi-turn livestream environments.
 
+> **Running the demo on your machine?** See **[`docs/SETUP.md`](docs/SETUP.md)** for the full from-scratch install (~15-25 min): prerequisites, OLLV/Aria clone, monkey-patch, and the one-click `presentation_demo.sh` launcher. Troubleshooting section at the bottom.
+
 ![C-A-B Pipeline Architecture](Infographic.png)
 
 ---
