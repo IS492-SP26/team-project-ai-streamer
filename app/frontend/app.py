@@ -1088,7 +1088,11 @@ def main() -> None:
         else:
             _section_header("💬 Local chat")
 
-        transcript_height = 540 if st.session_state.echo_mode else 480
+        # Match the right column's combined height: verdict-pill block
+        # (~80px) + Aria iframe (540px) ≈ 620px. So the left transcript
+        # gets 600px to make both columns bottom out at roughly the
+        # same y when their expanders are collapsed.
+        transcript_height = 600 if st.session_state.echo_mode else 480
         chat_box = st.container(height=transcript_height)
         with chat_box:
             if not st.session_state.events:
@@ -1185,10 +1189,13 @@ def main() -> None:
                 "Flip Pipeline mode (sidebar) and ▶ Play to compare."
             )
 
-        # Detail expanders live UNDER the transcript on the left so the
-        # right column stays focused on Aria + the latest verdict, and
-        # the page bottoms out at roughly the same vertical mark on both
-        # sides (visual balance).
+        # 🔬 Pipeline detail lives UNDER the transcript on the left
+        # so the operator can correlate "what each detector said" with
+        # the message it judged. 📋 Recent events lives on the right
+        # (under the iframe) so each column has one expander → both
+        # columns reach roughly the same height when expanded, giving
+        # the page visual balance whether the operator is inspecting
+        # the pipeline or auditing event history.
         with st.expander("🔬 Pipeline detail (last turn)", expanded=False):
             if st.session_state.events:
                 latest = st.session_state.events[-1]
@@ -1199,9 +1206,6 @@ def main() -> None:
                     st.caption("No layer details on this turn.")
             else:
                 st.caption("No turns yet.")
-
-        with st.expander("📋 Recent events", expanded=False):
-            render_event_log(st.session_state.events, theme)
 
     # ---------- right column: verdict pill → Aria iframe ----------
     with col_right:
@@ -1236,6 +1240,12 @@ def main() -> None:
                 "</div>",
                 unsafe_allow_html=True,
             )
+
+        # 📋 Recent events lives on the right (under iframe) so each
+        # column has one expander — see the matching Pipeline-detail
+        # comment in the left column above.
+        with st.expander("📋 Recent events", expanded=False):
+            render_event_log(st.session_state.events, theme)
 
     # ============================== auto-advance ==============================
     if st.session_state.rt_playing and st_autorefresh is not None:
