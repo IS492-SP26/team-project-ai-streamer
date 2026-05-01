@@ -1,6 +1,13 @@
 [server]
 headless = true
 
+[client]
+# Hide the entire native Streamlit toolbar (Deploy button + kebab menu).
+# The kebab's only remaining items are Rerun / Clear cache / Print / etc
+# which the demo audience doesn't need; removing the bar reclaims the
+# top strip and gives the topbar room to breathe.
+toolbarMode = "minimal"
+
 [theme]
 # Pin to "light" because the canonical handoff-2 look is paper-and-ink.
 # Side effect (intentional): Streamlit's kebab menu also hides its
