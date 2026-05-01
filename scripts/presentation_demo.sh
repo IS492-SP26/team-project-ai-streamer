@@ -54,7 +54,9 @@ for arg in "$@"; do
 done
 
 OLLV_DIR="${OLLV_DIR:-$HOME/Open-LLM-VTuber}"
-PACE="${PACE:-8}"
+PACE="${PACE:-12}"   # seconds between timeline steps. Aria's TTS takes
+                     # 4-7s; the next banner + scenario kickoff prints
+                     # over the previous narration if PACE is too low.
 ECHO_STREAM="${CAB_ECHO_STREAM_PATH:-/tmp/cab_chat_stream.jsonl}"
 
 # Auto-pick GitHub Models token from gh CLI when GITHUB_TOKEN is unset.
@@ -199,10 +201,14 @@ run_scenario() {
     local mode="$2"
     local label="$3"
     banner "$label" "scenario=$scenario_id  mode=$mode"
+    # --settle-seconds 10 (was 5) — gives Aria's TTS time to finish
+    # speaking the previous turn's response BEFORE the driver fires
+    # the next inject. At 5s the audio overlapped audibly during the
+    # injection / wellbeing scenarios where Aria's reply runs longer.
     python3 -m app.red_team.ollv_ws_driver \
         --scenario "app/eval/scenarios/${scenario_id}.json" \
         --mode "$mode" \
-        --settle-seconds 5 2>&1 | tee -a "$DEMO_LOG"
+        --settle-seconds 10 2>&1 | tee -a "$DEMO_LOG"
 }
 
 # ----------------------------------------------------------------------

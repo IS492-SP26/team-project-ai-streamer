@@ -380,7 +380,7 @@ def _init_session_state() -> dict:
         "risk_state": "Safe",
         "rt_iterator": None,
         "rt_playing": False,
-        "rt_pace": 6,
+        "rt_pace": 12,
         "rt_scenario_done": False,
         "rt_session_label": "",
     }
@@ -552,12 +552,22 @@ def _render_sidebar() -> None:
                     unsafe_allow_html=True,
                 )
 
+                # Pace floor raised from 2 → 6 because Aria's TTS for
+                # the typical scenario response runs 4-7 seconds, and
+                # the next turn's audio would step on the previous
+                # one. 12s default gives the previous turn time to
+                # finish speaking, the dashboard time to update, and
+                # the audience time to read the verdict pill before
+                # the next prompt fires.
                 st.session_state.rt_pace = st.slider(
                     "Pace · seconds per turn",
-                    min_value=2,
-                    max_value=15,
+                    min_value=6,
+                    max_value=25,
                     value=int(st.session_state.rt_pace),
                     key="sidebar_pace_slider",
+                    help="How long to wait between auto-played turns. "
+                         "Aria's TTS takes 4-7s per response — set this "
+                         "above that or audio overlaps.",
                 )
 
                 # Status pill: idle / running / done — clearer than

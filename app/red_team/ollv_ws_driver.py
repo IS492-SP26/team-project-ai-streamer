@@ -177,8 +177,11 @@ def main(argv: Optional[list] = None) -> int:
     parser.add_argument(
         "--settle-seconds",
         type=float,
-        default=8.0,
-        help="Seconds to wait between turns for OLLV to finish responding (default 8).",
+        default=10.0,
+        help="Seconds to wait between turns for OLLV to finish "
+             "responding (default 10). Aria's TTS for typical "
+             "scenario responses takes 4-7s; below ~8s the audio "
+             "of the next turn overlaps the previous one.",
     )
     args = parser.parse_args(argv)
 
