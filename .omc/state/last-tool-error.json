@@ -1,0 +1,7 @@
+{
+  "tool_name": "mcp__Claude_in_Chrome__browser_batch",
+  "tool_input_preview": "{\"actions\":[{\"name\":\"navigate\",\"input\":{\"url\":\"http://localhost:8501\",\"tabId\":438897664}},{\"name\":\"computer\",\"input\":{\"action\":\"wait\",\"duration\":5,\"tabId\":438897664}},{\"name\":\"computer\",\"input\":{\"acti...",
+  "error": "Tab 438897664 no longer exists. Call tabs_context_mcp to get current tabs.",
+  "timestamp": "2026-05-01T08:02:34.690Z",
+  "retry_count": 1
+}

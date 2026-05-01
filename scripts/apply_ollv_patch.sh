@@ -7,11 +7,13 @@
 #     1) WebSocket interception so the parent Streamlit page can
 #        inject CAB_INJECT_CHAT events into Aria's existing /client-ws
 #        session (used by example buttons + red-team auto-play).
-#     2) Hide chakra-toast notifications (they overlay the avatar).
-#     3) Pin OLLV's bottom-control bar to the iframe's bottom edge via
-#        position:fixed so it cannot be clipped by an undersized
-#        iframe ("controls cut at half" complaint that recurred several
-#        times during demo prep).
+#     2) Hide chakra-toast notifications + VAD warning overlays
+#        (they obscure Aria during demos).
+#     3) Override OLLV's `height: 100vh` (which Chrome resolves to
+#        OUTER-window viewport when in an iframe) with `height: 100%`
+#        so OLLV's full layout (avatar + idle pill + mic/hand row +
+#        textarea) fits inside the iframe's actual height — fixes
+#        the "卡成一半" (controls cut at half) complaint.
 #
 #   The patch lives in this repo as `scripts/ollv_index_html.patched.html`
 #   (the full patched file). This script copies it over the OLLV clone's
@@ -59,11 +61,11 @@ fi
 cp "$PATCH_SOURCE" "$TARGET"
 echo "[patch] copied $PATCH_SOURCE → $TARGET"
 
-# Verify sentinel + position:fixed CSS made it through.
+# Verify all three load-bearing patches made it through.
 if grep -q "C-A-B demo CSS overrides" "$TARGET" && \
-   grep -q "position: fixed" "$TARGET" && \
+   grep -q 'height: 100% !important' "$TARGET" && \
    grep -q "CAB_INJECT_CHAT" "$TARGET"; then
-  echo "[patch] ✅ all three patches present (toast hide, control-bar pin, WS bridge)"
+  echo "[patch] ✅ all three patches present (toast/VAD hide, height override, WS bridge)"
 else
   echo "[patch] ⚠️  patch verification failed — check $TARGET" >&2
   exit 1

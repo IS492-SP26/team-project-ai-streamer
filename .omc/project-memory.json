@@ -1,0 +1,491 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1777644008679,
+  "projectRoot": "/Users/leofitz/team-project-ai-streamer",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "app",
+      "docs",
+      "scripts",
+      "tests"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "app": {
+      "path": "app",
+      "purpose": "Application code",
+      "fileCount": 12,
+      "lastAccessed": 1777644008668,
+      "keyFiles": [
+        "DEMO_SCRIPT.md",
+        "INSTALL.md",
+        "README.md",
+        "demo_with_llm.py",
+        "main.py"
+      ]
+    },
+    "concept_iteration_feedback": {
+      "path": "concept_iteration_feedback",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1777644008668,
+      "keyFiles": [
+        "CONCEPT_ITERATION.md",
+        "DESIGN_SPEC.md"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 6,
+      "lastAccessed": 1777644008668,
+      "keyFiles": [
+        "ARTIFACT_PACKAGE.md",
+        "COWORK_BRIEF.md",
+        "FINAL_REPORT.md",
+        "SETUP.md",
+        "cp4_live_demo_runbook.md"
+      ]
+    },
+    "literatures": {
+      "path": "literatures",
+      "purpose": null,
+      "fileCount": 17,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "2210.03629v3.pdf",
+        "A Survey of Attacks on Large Language Models.pdf",
+        "Automatic LLM Red Teaming.pdf",
+        "CAMEL-Communicative Agents-for-“Mind”-Exploration-of-Large-Language-Model Society.pdf",
+        "Controllable Text Generation for Large Language Models.pdf"
+      ]
+    },
+    "prompting_test_code": {
+      "path": "prompting_test_code",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "README.md",
+        "requirements.txt"
+      ]
+    },
+    "proposal": {
+      "path": "proposal",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "PROPOSAL.md"
+      ]
+    },
+    "reflections": {
+      "path": "reflections",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "Fitz Song.md",
+        "Wen_Caroline.md",
+        "wu_danni.md"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 7,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "apply_ollv_patch.sh",
+        "ollv_index_html.patched.html",
+        "one_click_demo.sh",
+        "presentation_demo.sh",
+        "run_cp4_multi_seed.sh"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 6,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "__init__.py",
+        "test_cp4_pipeline.py",
+        "test_harmful_escalation_regression.py",
+        "test_logger.py",
+        "test_proxy_content_flatten.py"
+      ]
+    },
+    "validation": {
+      "path": "validation",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "Opportunity framing.md"
+      ]
+    },
+    "app/data": {
+      "path": "app/data",
+      "purpose": "Data files",
+      "fileCount": 5,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "__init__.py",
+        "logger.py",
+        "schema.sql"
+      ]
+    },
+    "prompting_test_code/data": {
+      "path": "prompting_test_code/data",
+      "purpose": "Data files",
+      "fileCount": 3,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "scenario1_multiturn.json",
+        "scenario2_cultural.json",
+        "scenario3_injection.json"
+      ]
+    },
+    "prompting_test_code/src": {
+      "path": "prompting_test_code/src",
+      "purpose": "Source code",
+      "fileCount": 4,
+      "lastAccessed": 1777644008669,
+      "keyFiles": [
+        "__init__.py",
+        "config.py",
+        "report_generator.py"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "app/frontend/app.py",
+      "accessCount": 95,
+      "lastAccessed": 1777644749380,
+      "type": "file"
+    },
+    {
+      "path": "app/integrations/cab_openai_proxy.py",
+      "accessCount": 24,
+      "lastAccessed": 1777626132932,
+      "type": "file"
+    },
+    {
+      "path": "app/pipeline/cab_pipeline.py",
+      "accessCount": 17,
+      "lastAccessed": 1777583666015,
+      "type": "file"
+    },
+    {
+      "path": "app/main.py",
+      "accessCount": 15,
+      "lastAccessed": 1777534366460,
+      "type": "file"
+    },
+    {
+      "path": "app/docs/future_directions.md",
+      "accessCount": 8,
+      "lastAccessed": 1777516229724,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/analyze_user_study.py",
+      "accessCount": 8,
+      "lastAccessed": 1777518250236,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_cp4_pipeline.py",
+      "accessCount": 6,
+      "lastAccessed": 1777583620627,
+      "type": "file"
+    },
+    {
+      "path": "app/docs/use-cases.md",
+      "accessCount": 5,
+      "lastAccessed": 1777516165783,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 5,
+      "lastAccessed": 1777644049954,
+      "type": "file"
+    },
+    {
+      "path": "docs/cp4_live_demo_runbook.md",
+      "accessCount": 5,
+      "lastAccessed": 1777644072342,
+      "type": "file"
+    },
+    {
+      "path": "app/docs/architecture.md",
+      "accessCount": 4,
+      "lastAccessed": 1777516114977,
+      "type": "file"
+    },
+    {
+      "path": "docs/integrity_guidelines.md",
+      "accessCount": 4,
+      "lastAccessed": 1777516542897,
+      "type": "file"
+    },
+    {
+      "path": "scripts/run_demo.sh",
+      "accessCount": 4,
+      "lastAccessed": 1777521702459,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/generate_prompts.py",
+      "accessCount": 4,
+      "lastAccessed": 1777577996094,
+      "type": "file"
+    },
+    {
+      "path": "docs/integrations/open_llm_vtuber_setup.md",
+      "accessCount": 4,
+      "lastAccessed": 1777624273516,
+      "type": "file"
+    },
+    {
+      "path": "app/docs/module_c_layer_boundaries.md",
+      "accessCount": 3,
+      "lastAccessed": 1777515655940,
+      "type": "file"
+    },
+    {
+      "path": "app/docs/safety-privacy.md",
+      "accessCount": 3,
+      "lastAccessed": 1777516240965,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/personas/_tasks.json",
+      "accessCount": 3,
+      "lastAccessed": 1777583692374,
+      "type": "file"
+    },
+    {
+      "path": "app/requirements.txt",
+      "accessCount": 3,
+      "lastAccessed": 1777624339935,
+      "type": "file"
+    },
+    {
+      "path": "app/red_team/ollv_ws_driver.py",
+      "accessCount": 3,
+      "lastAccessed": 1777625876622,
+      "type": "file"
+    },
+    {
+      "path": "app/data/logger.py",
+      "accessCount": 2,
+      "lastAccessed": 1777514270217,
+      "type": "file"
+    },
+    {
+      "path": "app/module_b/evaluation/scenario_schema.py",
+      "accessCount": 2,
+      "lastAccessed": 1777514343121,
+      "type": "file"
+    },
+    {
+      "path": "app/module_c/__init__.py",
+      "accessCount": 2,
+      "lastAccessed": 1777515230347,
+      "type": "file"
+    },
+    {
+      "path": "app/module_b/evaluation/run_cp4_eval.py",
+      "accessCount": 2,
+      "lastAccessed": 1777515648518,
+      "type": "file"
+    },
+    {
+      "path": "app/module_b/evaluation/metrics.py",
+      "accessCount": 2,
+      "lastAccessed": 1777515666997,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/USER_STUDY_PROTOCOL.md",
+      "accessCount": 2,
+      "lastAccessed": 1777515705458,
+      "type": "file"
+    },
+    {
+      "path": "app/red_team/runner.py",
+      "accessCount": 2,
+      "lastAccessed": 1777519491600,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/README_ai_persona.md",
+      "accessCount": 2,
+      "lastAccessed": 1777577387476,
+      "type": "file"
+    },
+    {
+      "path": "app/docs/CP3_PROJECT_STATUS.md",
+      "accessCount": 1,
+      "lastAccessed": 1777440044982,
+      "type": "file"
+    },
+    {
+      "path": "concept_iteration_feedback/DESIGN_SPEC.md",
+      "accessCount": 1,
+      "lastAccessed": 1777440048865,
+      "type": "file"
+    },
+    {
+      "path": "proposal/PROPOSAL.md",
+      "accessCount": 1,
+      "lastAccessed": 1777440052291,
+      "type": "file"
+    },
+    {
+      "path": "reflections/Fitz Song.md",
+      "accessCount": 1,
+      "lastAccessed": 1777440058505,
+      "type": "file"
+    },
+    {
+      "path": "app/module_a/risk_tracker.py",
+      "accessCount": 1,
+      "lastAccessed": 1777515213688,
+      "type": "file"
+    },
+    {
+      "path": "app/module_a/autonomy_policy.py",
+      "accessCount": 1,
+      "lastAccessed": 1777515214016,
+      "type": "file"
+    },
+    {
+      "path": "CP4_RUN_COMMANDS.md",
+      "accessCount": 1,
+      "lastAccessed": 1777515628398,
+      "type": "file"
+    },
+    {
+      "path": "app/module_b/docs/eval_run_summary.md",
+      "accessCount": 1,
+      "lastAccessed": 1777515634053,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/POST_STUDY_SURVEY.md",
+      "accessCount": 1,
+      "lastAccessed": 1777515664542,
+      "type": "file"
+    },
+    {
+      "path": "app/DEMO_SCRIPT.md",
+      "accessCount": 1,
+      "lastAccessed": 1777515668072,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_logger.py",
+      "accessCount": 1,
+      "lastAccessed": 1777516423200,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/personas/P01_creator.json",
+      "accessCount": 1,
+      "lastAccessed": 1777517266736,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/personas/P02_moderator.json",
+      "accessCount": 1,
+      "lastAccessed": 1777517283861,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/personas/P03_newcomer.json",
+      "accessCount": 1,
+      "lastAccessed": 1777517298797,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/personas/P04_safety_researcher.json",
+      "accessCount": 1,
+      "lastAccessed": 1777517315471,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/personas/P05_bilingual.json",
+      "accessCount": 1,
+      "lastAccessed": 1777517333102,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/personas/P06_concerned_friend.json",
+      "accessCount": 1,
+      "lastAccessed": 1777517356311,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/personas/P07_skeptic.json",
+      "accessCount": 1,
+      "lastAccessed": 1777517375417,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/personas/P08_classmate_dev.json",
+      "accessCount": 1,
+      "lastAccessed": 1777517398801,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/parse_responses.py",
+      "accessCount": 1,
+      "lastAccessed": 1777517562143,
+      "type": "file"
+    },
+    {
+      "path": "docs/user_study/responses/_example_template.json",
+      "accessCount": 1,
+      "lastAccessed": 1777518184652,
+      "type": "file"
+    },
+    {
+      "path": "app/frontend/red_team_demo.py",
+      "accessCount": 1,
+      "lastAccessed": 1777519111077,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

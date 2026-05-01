@@ -1,12 +1,19 @@
 """
-theme.py — Dark/Light theme system for C-A-B governance UI.
+theme.py — Design system for the C-A-B Bridge governance console.
 
-Usage:
-    from frontend.theme import get_theme, inject_theme_css
+Tokens, typography, and base CSS for the Streamlit dashboard. Stays
+backwards-compatible with the previous public surface:
 
-    theme = get_theme()              # syncs with Streamlit native theme
-    inject_theme_css(theme)          # injects CSS into the page
-    theme["state_colors"]["Safe"]    # use in components
+    from frontend.theme import get_theme, inject_theme_css, STATE_EMOJI
+
+`get_theme()` still returns a dict with the same keys callers depend on
+(`state_colors`, `text_primary`, etc.). New tokens (surface scale,
+spacing, radius, accent, font stack) are additive.
+
+Visual concept: a balanced live-broadcast control bridge — calm,
+instrumented, restrained. One brand accent, one heartbeat animation,
+state colors only where state is meaningful. See app.py docstring for
+the full layout rationale.
 """
 
 from __future__ import annotations
@@ -19,55 +26,80 @@ import streamlit as st
 # ---------------------------------------------------------------------------
 # Theme definitions
 # ---------------------------------------------------------------------------
+# State colors are calibrated to a single value per state across both
+# themes (the eye reads "Safe-green" the same in light and dark) — only
+# surfaces change between dark and light.
+
+_STATE_COLORS = {
+    "Safe":        "#10b981",  # emerald 500
+    "Suspicious":  "#f59e0b",  # amber 500
+    "Escalating":  "#f97316",  # orange 500
+    "Restricted":  "#ef4444",  # rose 500
+    "Off":         "#6b7280",  # gray 500
+}
+
+_BRAND_ACCENT = "#22d3ee"      # cyan 400 — only LIVE pulse + brand mark
+_WELLBEING    = "#8b5cf6"      # violet 500 — explicit token (was inline)
+
 
 LIGHT_THEME: Dict = {
     "name": "light",
-    "bg_primary": "#ffffff",
-    "bg_secondary": "#f8f9fa",
-    "bg_card": "#ffffff",
-    "text_primary": "#1a1a2e",
-    "text_secondary": "#6c757d",
-    "border": "#e0e0e0",
-    "state_colors": {
-        "Safe": "#22c55e",
-        "Suspicious": "#eab308",
-        "Escalating": "#f97316",
-        "Restricted": "#ef4444",
-        "Off": "#6b7280",
-    },
-    "state_text": "#ffffff",
-    "tag_bg": "#f0f0f0",
-    "tag_text": "#333333",
-    "chat_user_bg": "#e8f4fd",
-    "chat_bot_bg": "#f0f0f0",
-    "blocked_bg": "#fef2f2",
-    "blocked_border": "#ef4444",
-    "expander_bg": "#f8f9fa",
+    "bg_primary":   "#fafbfc",
+    "bg_secondary": "#f3f4f6",
+    "bg_card":      "#ffffff",
+    "surface_0":    "#fafbfc",
+    "surface_1":    "#ffffff",
+    "surface_2":    "#f8fafc",
+    "surface_3":    "#f1f5f9",
+    "hairline":     "#e5e7eb",
+    "text_primary": "#0f172a",
+    "text_secondary": "#64748b",
+    "text_muted":   "#94a3b8",
+    "border":       "#e5e7eb",
+    "shadow_sm":    "0 1px 2px rgba(15,23,42,0.04)",
+    "shadow_md":    "0 4px 14px rgba(15,23,42,0.06)",
+    "shadow_lg":    "0 12px 32px rgba(15,23,42,0.08)",
+    "state_colors": _STATE_COLORS,
+    "state_text":   "#ffffff",
+    "tag_bg":       "#f1f5f9",
+    "tag_text":     "#0f172a",
+    "chat_user_bg": "#f8fafc",
+    "chat_bot_bg":  "#ffffff",
+    "blocked_bg":   "#fef2f2",
+    "blocked_border": _STATE_COLORS["Restricted"],
+    "expander_bg":  "#ffffff",
+    "accent":       _BRAND_ACCENT,
+    "wellbeing":    _WELLBEING,
 }
 
 DARK_THEME: Dict = {
     "name": "dark",
-    "bg_primary": "#0e1117",
-    "bg_secondary": "#1a1d23",
-    "bg_card": "#1e2128",
-    "text_primary": "#e6e6e6",
-    "text_secondary": "#8b949e",
-    "border": "#30363d",
-    "state_colors": {
-        "Safe": "#2ea043",
-        "Suspicious": "#d29922",
-        "Escalating": "#e3743b",
-        "Restricted": "#f85149",
-        "Off": "#484f58",
-    },
-    "state_text": "#ffffff",
-    "tag_bg": "#21262d",
-    "tag_text": "#c9d1d9",
-    "chat_user_bg": "#161b22",
-    "chat_bot_bg": "#1a1d23",
-    "blocked_bg": "#2d1215",
-    "blocked_border": "#f85149",
-    "expander_bg": "#161b22",
+    "bg_primary":   "#0b1020",
+    "bg_secondary": "#0f172a",
+    "bg_card":      "#111827",
+    "surface_0":    "#0b1020",
+    "surface_1":    "#0f172a",
+    "surface_2":    "#111827",
+    "surface_3":    "#1e293b",
+    "hairline":     "rgba(148,163,184,0.16)",
+    "text_primary": "#e2e8f0",
+    "text_secondary": "#94a3b8",
+    "text_muted":   "#64748b",
+    "border":       "rgba(148,163,184,0.16)",
+    "shadow_sm":    "0 1px 2px rgba(0,0,0,0.30)",
+    "shadow_md":    "0 4px 14px rgba(0,0,0,0.32)",
+    "shadow_lg":    "0 12px 32px rgba(0,0,0,0.40)",
+    "state_colors": _STATE_COLORS,
+    "state_text":   "#ffffff",
+    "tag_bg":       "rgba(148,163,184,0.10)",
+    "tag_text":     "#e2e8f0",
+    "chat_user_bg": "#0f172a",
+    "chat_bot_bg":  "#111827",
+    "blocked_bg":   "rgba(239,68,68,0.10)",
+    "blocked_border": _STATE_COLORS["Restricted"],
+    "expander_bg":  "#0f172a",
+    "accent":       _BRAND_ACCENT,
+    "wellbeing":    _WELLBEING,
 }
 
 
@@ -76,21 +108,16 @@ DARK_THEME: Dict = {
 # ---------------------------------------------------------------------------
 
 STATE_EMOJI = {
-    "Safe": "🟢",
-    "Suspicious": "🟡",
-    "Escalating": "🟠",
-    "Restricted": "🔴",
-    "Off": "⚪",
+    "Safe":       "●",
+    "Suspicious": "●",
+    "Escalating": "●",
+    "Restricted": "●",
+    "Off":        "○",
 }
 
 
 def _is_dark_mode() -> bool:
-    """Detect whether Streamlit's native theme is dark.
-
-    Checks ``st.get_option("theme.base")`` which reflects the user's
-    choice in the hamburger menu (System / Light / Dark).  Falls back
-    to *dark* when no explicit setting exists.
-    """
+    """Detect Streamlit's native theme. Defaults to dark when unset."""
     try:
         base = st.get_option("theme.base")
     except Exception:
@@ -99,69 +126,540 @@ def _is_dark_mode() -> bool:
         return False
     if base == "dark":
         return True
-    # "System" or unset — default to dark
-    return True
+    return True  # System / unset → dark
 
 
 def get_theme() -> Dict:
-    """Return current theme dict based on Streamlit's native theme setting."""
-    if _is_dark_mode():
-        return DARK_THEME
-    return LIGHT_THEME
+    return DARK_THEME if _is_dark_mode() else LIGHT_THEME
+
+
+# ---------------------------------------------------------------------------
+# CSS injection
+# ---------------------------------------------------------------------------
+
+
+def _vars(t: Dict) -> str:
+    """Emit CSS custom properties for the active theme. New tokens are
+    additive; legacy names (--cab-bg-primary, --cab-state-safe, …) are
+    preserved so existing consumers don't break."""
+    sc = t["state_colors"]
+    return f"""
+        /* Surfaces */
+        --cab-bg-primary:   {t["bg_primary"]};
+        --cab-bg-secondary: {t["bg_secondary"]};
+        --cab-bg-card:      {t["bg_card"]};
+        --cab-surface-0:    {t["surface_0"]};
+        --cab-surface-1:    {t["surface_1"]};
+        --cab-surface-2:    {t["surface_2"]};
+        --cab-surface-3:    {t["surface_3"]};
+        --cab-hairline:     {t["hairline"]};
+        --cab-border:       {t["border"]};
+
+        /* Text */
+        --cab-text-primary:   {t["text_primary"]};
+        --cab-text-secondary: {t["text_secondary"]};
+        --cab-text-muted:     {t["text_muted"]};
+
+        /* States */
+        --cab-state-safe:        {sc["Safe"]};
+        --cab-state-suspicious:  {sc["Suspicious"]};
+        --cab-state-escalating:  {sc["Escalating"]};
+        --cab-state-restricted:  {sc["Restricted"]};
+        --cab-state-off:         {sc["Off"]};
+        --cab-state-text:        {t["state_text"]};
+
+        /* Brand + special */
+        --cab-accent:    {t["accent"]};
+        --cab-wellbeing: {t["wellbeing"]};
+
+        /* Tags + chat */
+        --cab-tag-bg:    {t["tag_bg"]};
+        --cab-tag-text:  {t["tag_text"]};
+        --cab-blocked-bg:     {t["blocked_bg"]};
+        --cab-blocked-border: {t["blocked_border"]};
+
+        /* Spacing scale (4px base) */
+        --cab-space-1: 4px;
+        --cab-space-2: 8px;
+        --cab-space-3: 12px;
+        --cab-space-4: 16px;
+        --cab-space-5: 20px;
+        --cab-space-6: 24px;
+        --cab-space-8: 32px;
+
+        /* Radius */
+        --cab-radius-sm: 6px;
+        --cab-radius-md: 10px;
+        --cab-radius-lg: 14px;
+
+        /* Shadows */
+        --cab-shadow-sm: {t["shadow_sm"]};
+        --cab-shadow-md: {t["shadow_md"]};
+        --cab-shadow-lg: {t["shadow_lg"]};
+
+        /* Type */
+        --cab-font-sans: "Inter", -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", Roboto, "Helvetica Neue", Arial,
+                         sans-serif;
+        --cab-font-mono: "JetBrains Mono", "Roboto Mono", ui-monospace,
+                         SFMono-Regular, Menlo, monospace;
+    """
 
 
 def inject_theme_css(theme: Dict) -> None:
-    """Inject CSS variables for the active theme.
-
-    Previously this function emitted BOTH dark and light variable
-    blocks and tried to activate the light one via
-    ``:root[data-theme="light"]`` / ``.stApp[style*="white"]``. Modern
-    Streamlit doesn't reliably set those attributes, so the light
-    variables never activated even when the user picked Light Mode —
-    visible regression: Echo-transcript / Latest-verdict / stats-pill
-    section headers stayed dark on a white page.
-
-    Fix: trust ``get_theme()``. It already detects the active theme
-    via ``st.get_option("theme.base")``. Inject the corresponding
-    variable set DIRECTLY into ``:root`` so every var() reference
-    matches the chosen theme without selector contortions.
-    """
-
-    def _vars(t: Dict) -> str:
-        return f"""
-            --cab-bg-primary: {t["bg_primary"]};
-            --cab-bg-secondary: {t["bg_secondary"]};
-            --cab-bg-card: {t["bg_card"]};
-            --cab-text-primary: {t["text_primary"]};
-            --cab-text-secondary: {t["text_secondary"]};
-            --cab-border: {t["border"]};
-            --cab-tag-bg: {t["tag_bg"]};
-            --cab-tag-text: {t["tag_text"]};
-            --cab-blocked-bg: {t["blocked_bg"]};
-            --cab-blocked-border: {t["blocked_border"]};
-            --cab-state-text: {t["state_text"]};
-            --cab-state-safe: {t["state_colors"]["Safe"]};
-            --cab-state-suspicious: {t["state_colors"]["Suspicious"]};
-            --cab-state-escalating: {t["state_colors"]["Escalating"]};
-            --cab-state-restricted: {t["state_colors"]["Restricted"]};
-            --cab-state-off: {t["state_colors"]["Off"]};
-        """
+    """Inject design-system CSS variables + base styles into the page."""
 
     css = f"""
     <style>
-    /* Active theme variables (chosen by get_theme() — see theme.py
-       docstring for why we don't use selector-based switching). */
+    /* Inter + JetBrains Mono.  Streamlit serves Source Sans Pro by default;
+       we override at the body level. Falls back to system fonts gracefully
+       if Google Fonts is blocked. */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
     :root {{
         {_vars(theme)}
     }}
 
-    /* ============================================================
-       C-A-B Custom Classes (use CSS vars, auto-switch with theme)
-       ============================================================ */
+    /* ====================================================================
+       Base typography + body
+       ==================================================================== */
 
+    /* Apply Inter only to actual text containers — DO NOT use a wide
+       selector like `[class*="st-"]` because Streamlit's expander
+       chevrons + sidebar icons are Material Symbols glyphs that depend
+       on `font-family: 'Material Symbols Outlined'`. Overriding that
+       font makes glyph names ("arrow_right", "arrow_down") render as
+       literal text. */
+    html, body, .stApp,
+    .stMarkdown, .stMarkdown *,
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] .stMarkdown *,
+    [data-testid="stExpander"] summary span,
+    [data-testid="stChatMessage"], [data-testid="stChatMessage"] *,
+    [data-testid="stButton"] button,
+    [data-testid="stTextInput"] input,
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stRadio"] label,
+    [data-testid="stToggle"] label,
+    [data-testid="stCheckbox"] label,
+    [data-testid="stSelectbox"] label,
+    [data-testid="stSlider"] label,
+    [data-testid="stMetricLabel"], [data-testid="stMetricValue"] {{
+        font-family: var(--cab-font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+    }}
+
+    /* Restore Streamlit's icon font on all material-symbol glyphs.
+       Without this, expander chevrons show "arrow_right" / "arrow_down"
+       as literal text. */
+    .material-symbols-outlined,
+    .material-symbols-rounded,
+    .material-symbols-sharp,
+    .material-icons,
+    .material-icons-outlined,
+    span[class*="MaterialSymbol"],
+    [data-testid="stIconMaterial"],
+    [data-testid="stExpander"] summary svg + span,
+    [data-testid="stExpander"] summary [class*="material"],
+    [data-testid="stExpander"] [class*="symbols"] {{
+        font-family: 'Material Symbols Outlined',
+                     'Material Symbols Rounded',
+                     'Material Icons' !important;
+    }}
+
+    .stApp {{
+        background: var(--cab-surface-0);
+        color: var(--cab-text-primary);
+    }}
+
+    /* Block container — slightly tighter top padding (Streamlit default
+       is 6rem which wastes the demo's first 100 px). */
+    [data-testid="stMainBlockContainer"],
+    .block-container {{
+        padding-top: 1.4rem !important;
+        padding-bottom: 1.6rem !important;
+        max-width: 1480px !important;
+    }}
+
+    /* ====================================================================
+       Sidebar polish
+       ==================================================================== */
+
+    [data-testid="stSidebar"] {{
+        background: var(--cab-surface-1);
+        border-right: 1px solid var(--cab-hairline);
+    }}
+    [data-testid="stSidebar"] .stMarkdown h3 {{
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--cab-text-secondary) !important;
+        margin: 0 0 8px 0 !important;
+    }}
+    [data-testid="stSidebar"] hr {{
+        border: 0;
+        border-top: 1px solid var(--cab-hairline);
+        margin: 14px 0;
+    }}
+
+    /* ====================================================================
+       Custom utility classes — used by components.py + app.py
+       ==================================================================== */
+
+    .cab-eyebrow {{
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cab-text-secondary);
+        margin: 2px 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }}
+    .cab-eyebrow::after {{
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--cab-hairline);
+        margin-left: 4px;
+    }}
+
+    /* Top status bar */
+    .cab-topbar {{
+        display: flex;
+        align-items: center;
+        gap: var(--cab-space-4);
+        padding: 12px 18px;
+        background: linear-gradient(180deg,
+            var(--cab-surface-1) 0%,
+            var(--cab-surface-2) 100%);
+        border: 1px solid var(--cab-hairline);
+        border-radius: var(--cab-radius-lg);
+        box-shadow: var(--cab-shadow-sm);
+        margin: 0 0 var(--cab-space-4) 0;
+        flex-wrap: wrap;
+    }}
+    .cab-brand {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }}
+    .cab-brand-mark {{
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background:
+            radial-gradient(circle at 30% 30%, var(--cab-accent) 0%, transparent 60%),
+            linear-gradient(135deg, var(--cab-state-safe) 0%, var(--cab-accent) 100%);
+        position: relative;
+        flex-shrink: 0;
+    }}
+    .cab-brand-mark::after {{
+        content: "";
+        position: absolute; inset: 6px;
+        border: 1.5px solid rgba(255,255,255,0.85);
+        border-radius: 5px;
+    }}
+    .cab-brand-title {{
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: var(--cab-text-primary);
+        line-height: 1;
+    }}
+    .cab-brand-sub {{
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cab-text-muted);
+        margin-top: 3px;
+    }}
+    .cab-live {{
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 11px;
+        border-radius: 999px;
+        background: rgba(239,68,68,0.10);
+        border: 1px solid rgba(239,68,68,0.25);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--cab-state-restricted);
+    }}
+    .cab-live-dot {{
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--cab-state-restricted);
+        box-shadow: 0 0 0 0 rgba(239,68,68, 0.6);
+        animation: cab-pulse 1.6s ease-out infinite;
+    }}
+    @keyframes cab-pulse {{
+        0%   {{ box-shadow: 0 0 0 0 rgba(239,68,68, 0.55); }}
+        70%  {{ box-shadow: 0 0 0 9px rgba(239,68,68, 0);   }}
+        100% {{ box-shadow: 0 0 0 0 rgba(239,68,68, 0);     }}
+    }}
+    .cab-mode-chip {{
+        display: inline-flex;
+        flex-direction: column;
+        gap: 1px;
+        padding: 6px 12px;
+        border-radius: var(--cab-radius-md);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        line-height: 1.15;
+    }}
+    .cab-mode-chip[data-mode="cab"] {{
+        background: rgba(16,185,129,0.10);
+        border: 1px solid rgba(16,185,129,0.30);
+        color: var(--cab-state-safe);
+    }}
+    .cab-mode-chip[data-mode="baseline"] {{
+        background: rgba(239,68,68,0.10);
+        border: 1px solid rgba(239,68,68,0.30);
+        color: var(--cab-state-restricted);
+    }}
+    .cab-mode-chip-sub {{
+        font-size: 9.5px;
+        font-weight: 600;
+        opacity: 0.78;
+        letter-spacing: 0.04em;
+        text-transform: none;
+    }}
+
+    /* Stat cluster (right side of top bar) */
+    .cab-stats {{
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-left: auto;
+    }}
+    .cab-stat {{
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        padding: 4px 12px;
+        background: var(--cab-surface-2);
+        border: 1px solid var(--cab-hairline);
+        border-radius: var(--cab-radius-md);
+        min-width: 70px;
+    }}
+    .cab-stat-label {{
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: var(--cab-text-muted);
+    }}
+    .cab-stat-value {{
+        font-family: var(--cab-font-mono);
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--cab-text-primary);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+    }}
+    .cab-stat--accent .cab-stat-value {{ color: var(--cab-state-restricted); }}
+    .cab-stat--ok .cab-stat-value     {{ color: var(--cab-state-safe); }}
+
+    /* Verdict ribbon (sits above Aria iframe) */
+    .cab-ribbon {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: var(--cab-surface-1);
+        border: 1px solid var(--cab-hairline);
+        border-left: 4px solid var(--cab-state-off);
+        border-radius: var(--cab-radius-md);
+        box-shadow: var(--cab-shadow-sm);
+        margin: 0 0 12px 0;
+        flex-wrap: wrap;
+        min-height: 56px;
+    }}
+    .cab-ribbon[data-state="Safe"]       {{ border-left-color: var(--cab-state-safe); }}
+    .cab-ribbon[data-state="Suspicious"] {{ border-left-color: var(--cab-state-suspicious); }}
+    .cab-ribbon[data-state="Escalating"] {{ border-left-color: var(--cab-state-escalating); }}
+    .cab-ribbon[data-state="Restricted"] {{ border-left-color: var(--cab-state-restricted); }}
+    .cab-ribbon-action {{
+        font-family: var(--cab-font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        padding: 4px 10px;
+        border-radius: 6px;
+        color: #fff;
+    }}
+    .cab-ribbon-state {{
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--cab-text-primary);
+    }}
+    .cab-ribbon-score {{
+        font-family: var(--cab-font-mono);
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--cab-text-secondary);
+        font-variant-numeric: tabular-nums;
+    }}
+    .cab-chip {{
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        background: var(--cab-tag-bg);
+        color: var(--cab-tag-text);
+        border-radius: 5px;
+        font-family: var(--cab-font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+    }}
+    .cab-chip--injection {{
+        background: rgba(239,68,68,0.12);
+        color: var(--cab-state-restricted);
+        font-weight: 700;
+    }}
+    .cab-chip--wellbeing {{
+        background: rgba(139,92,246,0.14);
+        color: var(--cab-wellbeing);
+        font-weight: 700;
+    }}
+
+    /* Generic panel container */
+    .cab-panel {{
+        background: var(--cab-surface-1);
+        border: 1px solid var(--cab-hairline);
+        border-radius: var(--cab-radius-md);
+        padding: 14px 16px;
+        box-shadow: var(--cab-shadow-sm);
+    }}
+    .cab-panel-empty {{
+        padding: 22px 16px;
+        text-align: center;
+        background: var(--cab-surface-1);
+        border: 1px dashed var(--cab-hairline);
+        border-radius: var(--cab-radius-md);
+        color: var(--cab-text-muted);
+        font-size: 13px;
+        font-style: italic;
+    }}
+
+    /* Pipeline trace card */
+    .cab-pipeline {{
+        background: var(--cab-surface-1);
+        border: 1px solid var(--cab-hairline);
+        border-radius: var(--cab-radius-md);
+        padding: 10px 14px;
+        box-shadow: var(--cab-shadow-sm);
+    }}
+    .cab-pipeline-row {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 4px;
+        border-bottom: 1px solid var(--cab-hairline);
+        font-size: 13px;
+    }}
+    .cab-pipeline-row:last-child {{ border-bottom: 0; }}
+    .cab-pipeline-icon {{
+        width: 22px; text-align: center; font-size: 14px;
+        opacity: 0.85;
+    }}
+    .cab-pipeline-name {{
+        font-weight: 600;
+        color: var(--cab-text-primary);
+        min-width: 124px;
+    }}
+    .cab-pipeline-status {{
+        font-family: var(--cab-font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        padding: 2px 8px;
+        border-radius: 5px;
+    }}
+    .cab-pipeline-status--pass {{ background: rgba(16,185,129,0.12);  color: var(--cab-state-safe); }}
+    .cab-pipeline-status--high {{ background: rgba(239,68,68,0.12);   color: var(--cab-state-restricted); }}
+    .cab-pipeline-status--med  {{ background: rgba(245,158,11,0.14);  color: var(--cab-state-suspicious); }}
+    .cab-pipeline-status--low  {{ background: rgba(16,185,129,0.12);  color: var(--cab-state-safe); }}
+    .cab-pipeline-status--skip {{ background: var(--cab-tag-bg);      color: var(--cab-text-muted); }}
+    .cab-pipeline-detail {{
+        font-family: var(--cab-font-mono);
+        font-size: 11.5px;
+        color: var(--cab-text-secondary);
+        margin-left: auto;
+        text-align: right;
+        max-width: 60%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }}
+
+    /* Event card list */
+    .cab-event {{
+        display: flex;
+        gap: 12px;
+        padding: 12px 14px;
+        background: var(--cab-surface-1);
+        border: 1px solid var(--cab-hairline);
+        border-left: 3px solid var(--cab-state-off);
+        border-radius: var(--cab-radius-md);
+        margin: 0 0 8px 0;
+    }}
+    .cab-event[data-state="Safe"]       {{ border-left-color: var(--cab-state-safe); }}
+    .cab-event[data-state="Suspicious"] {{ border-left-color: var(--cab-state-suspicious); }}
+    .cab-event[data-state="Escalating"] {{ border-left-color: var(--cab-state-escalating); }}
+    .cab-event[data-state="Restricted"] {{ border-left-color: var(--cab-state-restricted); }}
+    .cab-event-turn {{
+        font-family: var(--cab-font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--cab-text-muted);
+        letter-spacing: 0.04em;
+        min-width: 52px;
+        padding-top: 1px;
+    }}
+    .cab-event-body {{ flex: 1; min-width: 0; }}
+    .cab-event-head {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+    }}
+    .cab-event-state {{
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }}
+    .cab-event-msg {{
+        font-size: 13px;
+        color: var(--cab-text-primary);
+        line-height: 1.45;
+        word-wrap: break-word;
+    }}
+    .cab-event-block {{
+        font-size: 12px;
+        color: var(--cab-state-restricted);
+        font-style: italic;
+        margin-top: 4px;
+    }}
+
+    /* Legacy classes — kept so existing markup in components.py /
+       risk_panel.py keeps rendering (no inline-style migration required). */
     .cab-state-pill {{
         padding: 14px 24px;
-        border-radius: 10px;
+        border-radius: var(--cab-radius-md);
         font-size: 22px;
         font-weight: 700;
         text-align: center;
@@ -174,16 +672,16 @@ def inject_theme_css(theme: Dict) -> None:
         background: var(--cab-tag-bg);
         color: var(--cab-tag-text);
         padding: 4px 12px;
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 13px;
+        border-radius: 5px;
+        font-family: var(--cab-font-mono);
+        font-size: 12px;
         margin: 2px 4px 2px 0;
     }}
     .cab-blocked {{
         background: var(--cab-blocked-bg);
         border-left: 4px solid var(--cab-blocked-border);
         padding: 10px 14px;
-        border-radius: 4px;
+        border-radius: var(--cab-radius-sm);
         margin: 4px 0;
         color: var(--cab-text-primary);
     }}
@@ -192,18 +690,11 @@ def inject_theme_css(theme: Dict) -> None:
         font-size: 12px;
     }}
 
-    /* ============================================================
-       Streamlit native widget overrides — fixes specific UI
-       regressions reported during demo rehearsal:
-       1) Red/orange focus ring on expanders after a click (Streamlit's
-          default :focus-visible style is a chunky reddish outline that
-          stays after the user clicks).
-       2) Pause / Step (secondary) buttons rendering nearly invisible
-          on the dark theme — default border is rgba(255,255,255,0.05)
-          which disappears.
-       ============================================================ */
+    /* ====================================================================
+       Streamlit native widget overrides
+       ==================================================================== */
 
-    /* Suppress the persistent red focus ring on expanders */
+    /* Suppress red focus ring on expanders (pre-existing fix). */
     [data-testid="stExpander"] details summary:focus,
     [data-testid="stExpander"] details summary:focus-visible,
     [data-testid="stExpander"] details:focus,
@@ -211,31 +702,76 @@ def inject_theme_css(theme: Dict) -> None:
     [data-testid="stExpander"]:focus-within {{
         outline: none !important;
         box-shadow: none !important;
-        border-color: var(--cab-border) !important;
+        border-color: var(--cab-hairline) !important;
     }}
-    /* Also: don't let an expander show a red border just for being open. */
     [data-testid="stExpander"] details[open] {{
-        border-color: var(--cab-border) !important;
+        border-color: var(--cab-hairline) !important;
+    }}
+    [data-testid="stExpander"] {{
+        border: 1px solid var(--cab-hairline) !important;
+        border-radius: var(--cab-radius-md) !important;
+        background: var(--cab-surface-1) !important;
+    }}
+    [data-testid="stExpander"] summary {{
+        font-weight: 600 !important;
+        font-size: 13px !important;
     }}
 
-    /* Bump non-primary button visibility on dark theme. The Pause /
-       Step buttons in the Red-team auto-play panel were rendering
-       with such a faint border that they disappeared on the dark bg. */
+    /* Bump non-primary button visibility. */
     [data-testid="stButton"] button[kind="secondary"]:not(:disabled),
     [data-testid="stButton"] button:not([kind="primary"]):not([kind="primaryFormSubmit"]):not(:disabled) {{
-        border: 1px solid var(--cab-text-secondary) !important;
+        border: 1px solid var(--cab-hairline) !important;
         color: var(--cab-text-primary) !important;
+        background: var(--cab-surface-1) !important;
     }}
     [data-testid="stButton"] button[kind="secondary"]:disabled,
     [data-testid="stButton"] button:not([kind="primary"]):not([kind="primaryFormSubmit"]):disabled {{
-        border: 1px solid var(--cab-border) !important;
-        color: var(--cab-text-secondary) !important;
+        border: 1px solid var(--cab-hairline) !important;
+        color: var(--cab-text-muted) !important;
         opacity: 0.55 !important;
     }}
-    [data-testid="stButton"] button[kind="secondary"]:hover:not(:disabled) {{
-        border-color: var(--cab-text-primary) !important;
-        background: var(--cab-bg-card) !important;
+    [data-testid="stButton"] button[kind="secondary"]:hover:not(:disabled),
+    [data-testid="stButton"] button:not([kind="primary"]):not([kind="primaryFormSubmit"]):hover:not(:disabled) {{
+        border-color: var(--cab-text-secondary) !important;
+        background: var(--cab-surface-2) !important;
     }}
+    [data-testid="stButton"] button[kind="primary"] {{
+        background: var(--cab-state-safe) !important;
+        border-color: var(--cab-state-safe) !important;
+    }}
+
+    /* Chat-message bubbles */
+    [data-testid="stChatMessage"] {{
+        background: var(--cab-surface-1) !important;
+        border: 1px solid var(--cab-hairline) !important;
+        border-radius: var(--cab-radius-md) !important;
+        padding: 10px 14px !important;
+        margin: 6px 0 !important;
+    }}
+
+    /* Container with explicit height (transcript scroll box) */
+    [data-testid="stVerticalBlock"] [data-testid="stVerticalBlockBorderWrapper"] {{
+        border-radius: var(--cab-radius-md);
+    }}
+
+    /* Scrollbar (webkit) */
+    *::-webkit-scrollbar       {{ width: 9px; height: 9px; }}
+    *::-webkit-scrollbar-thumb {{
+        background: var(--cab-hairline);
+        border-radius: 999px;
+    }}
+    *::-webkit-scrollbar-thumb:hover {{
+        background: var(--cab-text-muted);
+    }}
+    *::-webkit-scrollbar-track {{ background: transparent; }}
+
+    /* Subtle fade-in for transcript turns */
+    @keyframes cab-fade-in {{
+        from {{ opacity: 0; transform: translateY(2px); }}
+        to   {{ opacity: 1; transform: translateY(0);   }}
+    }}
+    [data-testid="stChatMessage"] {{ animation: cab-fade-in 180ms ease-out; }}
+
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)

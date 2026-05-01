@@ -33,50 +33,36 @@
         height: 100% !important;
         max-height: 100% !important;
       }
-      /* Hide OLLV's bottom-control bar (idle status pill + mic/hand
-         buttons + message textarea) AND the chat-history collapse
-         chevron above it. The C-A-B demo drives Aria via the
-         Streamlit sidebar's Example messages + Red-team auto-play
-         buttons, which inject through the captured WebSocket. The
-         bottom-control bar in OLLV has unstable clipping behavior
-         across viewport sizes (because OLLV's flex layout reflows
-         the bar's height differently at different widths) and was
-         the persistent "卡成一半" the user reported across 8+
-         iterations. With the bar hidden, the iframe simply shows
-         Aria + scene background — no controls to clip, no
-         asymmetry between left/right columns of the parent app.
-         Trade-off: user can't type DIRECTLY into Aria's textarea
-         anymore; they use the Example messages buttons (sidebar)
-         for canned demo prompts, OR the Streamlit chat_input which
-         drives the inject queue in local mode. */
-      .chakra-stack:has(textarea),
-      div[class*="chakra-stack"]:has(textarea),
-      .chakra-stack.css-1cckfm0 {
-        display: none !important;
-      }
-      /* The chat-history collapse chevron handle that sits ABOVE the
-         control bar — also hidden because there's nothing to collapse
-         to in our demo. */
-      [class*="css-"][class*="collapse"]:has(svg),
-      button[aria-label*="hide" i],
-      button[aria-label*="hidden" i] {
-        display: none !important;
-      }
-      /* Note: an earlier version of this patch tried to pin OLLV's
-         bottom-control bar with `position: fixed; bottom: 12px`. That
-         caused a worse regression: the idle-status pill lives in a
-         DIFFERENT parent element than the message-textarea chakra-stack,
-         so pinning only the textarea row left the idle pill in normal
-         flow where it got partially occluded by the pinned bar (visible
-         as "idle pill clipped at top" in user reports).
+      /* Keep OLLV's bottom-control bar VISIBLE — the user types
+         messages there and toggles voice/mic from those controls.
+         An earlier pivot hid the whole bar via
+         `.chakra-stack:has(textarea){display:none}` to dodge the
+         persistent "卡成一半" clipping bug, but that broke
+         user-driven messaging and voice toggle. Don't reintroduce
+         that hide rule — make the iframe tall enough to fit the
+         controls instead (set on the Streamlit side, currently
+         height=820).
 
-         Reverting to OLLV's natural layout. The Streamlit-side iframe
-         already uses `clamp(480px, calc(100vh - 280px), 660px)` for
-         responsive height, which keeps OLLV's full layout (avatar +
-         status pill + control bar) inside the viewport on any
-         reasonable display. If you still see clipping, the iframe
-         is too short — bump the clamp lower bound. Don't reintroduce
-         position:fixed without solving the cross-parent occlusion. */
+         Why clipping was hard: OLLV uses `height: 100vh` on
+         html/body, which Chrome resolves to OUTER-window viewport
+         height when the page is in an iframe — NOT the iframe's
+         own height. Our `html, body, #root { height: 100% }`
+         override below forces OLLV to fit within the iframe's
+         actual height. Combined with a fixed iframe height of
+         820px (set by Streamlit via the iframe attribute) this
+         gives OLLV: avatar (~580) + idle pill (~40) + mic/hand
+         row (~60) + textarea row (~60) + gap (~30) ≈ 770 with
+         50px headroom for Chakra reflow at narrow widths.
+
+         Earlier attempts that didn't work and shouldn't be
+         reintroduced without solving the named regression:
+         - position:fixed bottom:12px on chakra-stack — left the
+           idle-status pill (in a DIFFERENT parent) in normal flow
+           where it got occluded by the fixed bar.
+         - clamp(480, calc(100vh - 280), 660) — `100vh` resolves
+           to outer window in iframes, gave wrong heights at every
+           viewport size.
+         - Hiding the bar — broke user typing + voice toggle. */
     </style>
     <script>
       // MutationObserver that hides any added DOM node whose text
