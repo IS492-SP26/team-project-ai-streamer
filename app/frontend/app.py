@@ -212,20 +212,24 @@ def _render_aria_iframe_block() -> None:
     /client-ws session and Live2D state every 2 seconds (autorefresh
     interval). Inject queue handling is decoupled — see _emit_inject_drain.
     """
-    # iframe height set to 620px (was 540) so OLLV's full bottom-control
-    # row (idle pill + mic + hand + text input) fits inside without
-    # clipping. With 540px the controls were getting cut at half-height
-    # by the iframe boundary AND visually colliding with the Recent
-    # events expander rendered immediately below — the user flagged
-    # this multiple times. The 16px margin-bottom buffers the gap so
-    # the expander has breathing room.
+    # iframe sizing — OLLV's bottom-control bar (idle pill + mic + hand
+    # + textarea) is ~86px tall and sits in static flow under the
+    # avatar. So iframe must accommodate avatar + ~86px controls. 660px
+    # gives generous headroom (avatar ~574px + controls 86px) so the
+    # controls never clip even on tighter Chakra reflows.
+    #
+    # margin-bottom: 28px (was 16) creates a clear visual gap between
+    # the iframe's bottom edge and the next Streamlit element (Recent
+    # events expander) so the OLLV controls and the expander button
+    # don't read as "stuck together". User flagged the visual collision
+    # multiple times — 28px is a hard, unmistakable break.
     st.markdown(
         '<iframe id="aria_iframe" '
         'src="http://localhost:12393" '
-        'width="100%" height="620" '
+        'width="100%" height="660" '
         'style="border:0;border-radius:14px;background:#0d1117;'
         'box-shadow:0 4px 18px rgba(0,0,0,0.18);display:block;'
-        'margin-bottom:16px;" '
+        'margin-bottom:28px;" '
         'allow="autoplay; microphone; camera"></iframe>',
         unsafe_allow_html=True,
     )
@@ -1097,14 +1101,12 @@ def main() -> None:
             _section_header("💬 Local chat")
 
         # Match the right column's combined height: verdict-pill block
-        # (~80px) + Aria header (~30px) + Aria iframe (620px + 16px
-        # margin-bottom) ≈ 746px. The transcript container uses 680
-        # which together with the section header (~30px) and Pipeline-
-        # detail collapsed expander (~50px) lands the LEFT column at
-        # roughly the same y as the RIGHT column's Recent-events
-        # expander. (Full math in commit message; tweak if Streamlit
-        # padding changes.)
-        transcript_height = 680 if st.session_state.echo_mode else 480
+        # (~80px) + Aria header (~30px) + Aria iframe (660px + 28px
+        # margin-bottom) ≈ 798px. Transcript container uses 720 which
+        # together with the section header (~30px) and Pipeline-detail
+        # collapsed expander (~50px) lands the LEFT column at roughly
+        # the same y as the RIGHT column's Recent-events expander.
+        transcript_height = 720 if st.session_state.echo_mode else 480
         chat_box = st.container(height=transcript_height)
         with chat_box:
             if not st.session_state.events:
