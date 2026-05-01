@@ -222,36 +222,31 @@ def _render_aria_iframe_block() -> None:
     # horizontal rule with a soft glow). The 28px margin-bottom alone
     # was perceptually insufficient — OLLV's bright mic+hand buttons
     # sit at the iframe bottom edge, the Recent-events expander sits
-    # 28px below, and on dark backgrounds 28px reads as "stuck
-    # together". The hr makes the boundary unambiguous.
-    # The CSS `height: clamp(480px, calc(100vh - 280px), 660px)`
-    # overrides the html `height="660"` attribute and makes the iframe
-    # adapt to short viewports. Without this override, on a 14"
-    # MacBook viewport (~888px tall) the 660px iframe + 280px of
-    # page header overflows the viewport bottom — OLLV's natural
-    # bottom-control row ends up at the visible viewport edge and
-    # the iframe's own bottom (with its border-radius / shadow)
-    # is below the fold, which the user reads as "controls are stuck
-    # to the bottom of the visible area" / "卡成一半". Clamping the
-    # iframe to viewport - 280px guarantees the iframe (including the
-    # OLLV-pinned bottom-control bar) is fully on-screen on any
-    # viewport down to ~720px tall, while still using up to 660px on
-    # large displays.
-    # iframe background uses var(--cab-bg-card) so the boundary glow
-    # blends with the surrounding card on either theme. (OLLV's
-    # internal content stays dark — it's a hardcoded Live2D scene —
-    # but the iframe ELEMENT itself should pick up our theme so the
-    # corners + shadow look right in light mode.)
-    # Height clamp bumped (480→540 floor, 660→720 ceiling, 280→240
-    # viewport reserve) so Aria fills more of the visible space and
-    # OLLV's natural bottom-control row is comfortably inside.
+    # iframe is FIXED at 760px (clamp/responsive removed).
+    #
+    # The clamp `clamp(540, calc(100vh - 240), 720)` was an attempt to
+    # adapt iframe height to viewport. It backfired: at narrow column
+    # widths (e.g. when the user has DevTools open and the right
+    # column ~400px wide), OLLV's Chakra-flex layout reflows the
+    # avatar + bottom controls into a TALLER stack than OLLV needs at
+    # wide widths. The viewport-reserve clamp ended up sizing the
+    # iframe SHORTER than OLLV's content, cutting the mic/hand
+    # buttons in half — that's the persistent "卡成一半" the user
+    # reported across multiple iterations.
+    #
+    # Trade-off accepted: at 760px iframe + ~240px page header the
+    # whole page is ~1000px tall. On viewports < 1000px the page
+    # gets a normal browser scrollbar — that's fine, Recent events /
+    # Pipeline detail being below-the-fold is a normal pattern for
+    # secondary panels. The iframe is the PRIMARY content; making it
+    # always-fully-visible is more important than no-page-scroll.
     st.markdown(
         '<iframe id="aria_iframe" '
         'src="http://localhost:12393" '
-        'width="100%" height="720" '
+        'width="100%" height="760" '
         'style="border:0;border-radius:14px;background:var(--cab-bg-card);'
         'box-shadow:0 4px 18px rgba(0,0,0,0.18);display:block;'
-        'height:clamp(540px, calc(100vh - 240px), 720px);'
+        'min-height:760px;'
         'margin-bottom:24px;" '
         'allow="autoplay; microphone; camera"></iframe>'
         # Strong visual divider — was 1px hr, now a 2px line in the
