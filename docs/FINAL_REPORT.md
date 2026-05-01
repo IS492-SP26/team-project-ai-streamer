@@ -86,13 +86,13 @@ Module C processes each incoming message through four sequential detection layer
 
 A parallel wellbeing pre-filter runs outside the security detection chain. When a vulnerable-user disclosure is detected, the pipeline routes immediately to a hardcoded supportive deflection, bypassing the LLM entirely. A session-aware recovery branch (commit `adf2a44`) de-escalates risk state when a recovery pattern follows a prior crisis turn in history.
 
-**Module A — Stateful Risk Modeling**
+**Module A — Adaptive Risk Modeling**
 
 Module A implements a finite-state escalation model across four states: Safe, Suspicious, Escalating, and Restricted. Risk scores evolve per turn according to signal severity and tag bonuses. State thresholds: Safe < 0.30, Suspicious < 0.55, Escalating < 0.75, Restricted ≥ 0.75. Transitions follow one-step-up / one-step-down constraints preventing abrupt oscillation.
 
 The autonomy policy maps states to actions: Safe → `allow`, Suspicious/Escalating → `scan`, Restricted → `block`. The mediation layer applies pass-through, a prepended safety note, or a fixed Aria-style refusal. CP4 policy overrides handle edge cases: injection-blocked messages hard-set to Restricted regardless of score; vulnerable-user tags trigger a separate `mediate` action with in-character wellbeing response.
 
-**Module B — Automated Red-Team Evaluation**
+**Module B — Benchmarking via Red-Team Evaluation**
 
 Module B runs structured multi-turn adversarial scenarios through the pipeline via `scenario_runner.py` and computes evaluation metrics using `metrics.py`. Eight scenario files cover the primary threat vectors identified in CP1 literature. The evaluation is fully deterministic — no API key required — using a mock LLM that returns unsafe-compliance placeholders in baseline mode.
 
