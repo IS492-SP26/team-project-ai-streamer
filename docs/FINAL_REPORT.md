@@ -8,7 +8,7 @@
 
 ## Abstract
 
-AI livestream agents operating in open, adversarial chat environments face a deployment gap: existing safety research targets isolated prompt–response interactions, while livestream chat involves continuous multi-turn dialogue under public visibility and coordinated adversarial pressure. We present C-A-B — Contextual Message Structuring, Stateful Risk Modeling, and Automated Red-Team Evaluation — a three-layer governance pipeline designed to preserve streamer persona while preventing unauthorized or harmful outputs in AI VTuber deployments. The system employs lightweight deterministic detectors for reproducible evaluation alongside an optional Layer-2 LLM guard for ambiguous cases. Automated red-team evaluation across 8 scenarios shows C-A-B reduces mean attack success rate from 1.00 (baseline) to 0.14, improves persona preservation (3.54 → 4.46/5), and maintains zero false positives on benign turns with a mean time-to-intervention of 2.17 turns. An AI-persona simulation study (n=8, 24 rows) provides supplementary qualitative findings across eight finding clusters. We document one honest failure mode, report limitations, and provide fully reproducible evaluation scripts.
+AI livestream agents operating in open, adversarial chat environments face a deployment gap: existing safety research targets isolated prompt–response interactions, while livestream chat involves continuous multi-turn dialogue under public visibility and coordinated adversarial pressure. We present C-A-B — Contextual Message Structuring, Adaptive Risk Modeling, and Benchmarking via Red-Team Evaluation , a three-layer governance pipeline designed to preserve streamer persona while preventing unauthorized or harmful outputs in AI VTuber deployments. The system employs lightweight deterministic detectors for reproducible evaluation alongside an optional Layer-2 LLM guard for ambiguous cases. Automated red-team evaluation across 8 scenarios shows C-A-B reduces mean attack success rate from 1.00 (baseline) to 0.14, improves persona preservation (3.54 → 4.46/5), and maintains zero false positives on benign turns with a mean time-to-intervention of 2.17 turns. An AI-persona simulation study (n=8, 24 rows) provides supplementary qualitative findings across eight finding clusters. We document one honest failure mode, report limitations, and provide fully reproducible evaluation scripts.
 
 ---
 
@@ -16,7 +16,7 @@ AI livestream agents operating in open, adversarial chat environments face a dep
 
 ### 1.1 Problem Statement
 
-The rise of AI-driven VTubers — autonomous digital personas conducting live streaming sessions with real audiences — creates a novel and underexplored safety surface. Unlike static chatbot deployments, livestream AI agents operate under conditions of continuous multi-turn interaction, public broadcast visibility, and coordinated adversarial pressure from thousands of concurrent users. Research has shown that multi-turn adversarial interactions are significantly more effective than single-turn attacks at weakening LLM safety guardrails (Perez & Ribeiro, 2022), yet existing defenses are almost entirely evaluated in developer-controlled, single-turn settings.
+The rise of AI-driven VTubers - autonomous digital personas conducting live streaming sessions with real audiences, which creates a novel and underexplored safety surface. Unlike static chatbot deployments, livestream AI agents operate under conditions of continuous multi-turn interaction, public broadcast visibility, and coordinated adversarial pressure from thousands of concurrent users. Research has shown that multi-turn adversarial interactions are significantly more effective than single-turn attacks at weakening LLM safety guardrails (Perez & Ribeiro, 2022), yet existing defenses are almost entirely evaluated in developer-controlled, single-turn settings.
 
 This deployment gap has real consequences. Prompt injection attacks can redirect an AI streamer's persona and outputs in real time, in front of a live audience. Social engineering tactics can gradually escalate from benign requests to harmful content across multiple turns. Vulnerable users disclosing personal distress require sensitive, in-character responses that neither alarm other viewers nor ignore a genuine crisis signal. None of these threat vectors are adequately addressed by moderation APIs designed for single-message classification.
 
@@ -268,7 +268,7 @@ The primary contribution is system-level integration: showing that contextual me
 
 **Priority future work:**
 
-1. *Human user study.* Recruit 5–8 real VTuber creators, moderators, or viewers to validate trust, usability, and intervention timing findings beyond AI-persona simulation.
+1. *Human user study.* Recruit more than 10 real VTuber creators, moderators, or viewers to validate trust, usability, and intervention timing findings beyond AI-persona simulation.
 2. *Layer-2 LLM guard rollout.* Enable cost-gated semantic review for all `needs_llm_review=True` signals to close the paraphrase evasion gap.
 3. *Multilingual coverage.* Extend all detection layers and scenario files to Mandarin Chinese and Japanese.
 4. *In-character crisis mediation.* Replace hardcoded acute wellbeing response with a persona-aware path delivering the crisis redirect in Aria's own voice.
