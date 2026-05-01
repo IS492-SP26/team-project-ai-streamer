@@ -298,6 +298,12 @@ def inject_theme_css(theme: Dict) -> None:
         font-size: 11px; font-weight: 600;
         letter-spacing: 0.14em; text-transform: uppercase;
         color: var(--cab-state-restricted);
+        /* Anchor the operational cluster (LIVE + mode chip + stats) to
+           the right edge of the topbar so the brand block sits flush
+           left and the empty whitespace lives between brand and the
+           cluster — readable as one balanced row instead of two
+           separated bunches. */
+        margin-left: auto;
     }}
     .cab-live-dot {{
         width: 7px; height: 7px; border-radius: 50%;
@@ -311,10 +317,10 @@ def inject_theme_css(theme: Dict) -> None:
     }}
 
     .cab-stat {{
-        padding: 4px 16px;
+        padding: 4px 12px;
         border-left: 1px solid var(--cab-hairline);
         display: flex; flex-direction: column; gap: 4px;
-        white-space: nowrap; min-width: 96px;
+        white-space: nowrap; min-width: 78px;
     }}
     .cab-stat:first-child {{ border-left: 0; padding-left: 0; }}
     .cab-stat-label {{
@@ -612,10 +618,12 @@ def inject_theme_css(theme: Dict) -> None:
        components.py / risk_panel.py. Map them onto the new design language
        so no Python markup needs to change. ============================= */
 
-    /* Stats container (right cluster of topbar) */
+    /* Stats container (right cluster of topbar). Anchoring is handled
+       upstream by `.cab-live` (margin-left: auto), so this block stays
+       inline with LIVE + the mode chip rather than bouncing to its
+       own corner. */
     .cab-stats {{
         display: flex; align-items: stretch; gap: 0;
-        margin-left: auto;
         flex-wrap: wrap;
     }}
 
