@@ -199,7 +199,7 @@ def render_risk_panel(state_data: Dict, theme: Optional[Dict] = None) -> None:
 
     state = state_data.get("risk_state", "Safe")
     score = state_data.get("risk_score", 0.0)
-    color = _STATE_CSS_VAR.get(state, "#666")
+    color = _STATE_CSS_VAR.get(state, "var(--cab-state-off)")
     emoji = STATE_EMOJI.get(state, "○")
 
     st.markdown(

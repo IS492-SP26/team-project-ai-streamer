@@ -302,7 +302,7 @@ def main() -> None:
             }
             for ev in st.session_state.events:
                 emoji = STATE_EMOJI.get(ev["risk_state"], "⚪")
-                state_color = _STATE_CSS_VAR.get(ev["risk_state"], "#666")
+                state_color = _STATE_CSS_VAR.get(ev["risk_state"], "var(--cab-state-off)")
 
                 with st.chat_message("user"):
                     st.markdown(

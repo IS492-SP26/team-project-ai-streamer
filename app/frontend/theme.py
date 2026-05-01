@@ -30,76 +30,80 @@ import streamlit as st
 # themes (the eye reads "Safe-green" the same in light and dark) — only
 # surfaces change between dark and light.
 
+# State colors — restrained, paper-friendly. Same hue across light/dark.
 _STATE_COLORS = {
-    "Safe":        "#10b981",  # emerald 500
-    "Suspicious":  "#f59e0b",  # amber 500
-    "Escalating":  "#f97316",  # orange 500
-    "Restricted":  "#ef4444",  # rose 500
-    "Off":         "#6b7280",  # gray 500
+    "Safe":        "#3f7d58",  # sage 600  (oklch(58% 0.07 150))
+    "Suspicious":  "#a87a2c",  # amber 700 (oklch(58% 0.10 75))
+    "Escalating":  "#b85d2e",  # clay 700  (oklch(58% 0.12 50))
+    "Restricted":  "#9b3030",  # oxblood   (oklch(48% 0.13 25))
+    "Off":         "#9a9690",  # warm grey
 }
 
-_BRAND_ACCENT = "#22d3ee"      # cyan 400 — only LIVE pulse + brand mark
-_WELLBEING    = "#8b5cf6"      # violet 500 — explicit token (was inline)
+_BRAND_ACCENT = "#7a5a3a"      # walnut accent — used only on brand mark + LIVE pulse
+_WELLBEING    = "#5b5391"      # restrained violet for self-harm/wellbeing tag
 
 
 LIGHT_THEME: Dict = {
     "name": "light",
-    "bg_primary":   "#fafbfc",
-    "bg_secondary": "#f3f4f6",
-    "bg_card":      "#ffffff",
-    "surface_0":    "#fafbfc",
-    "surface_1":    "#ffffff",
-    "surface_2":    "#f8fafc",
-    "surface_3":    "#f1f5f9",
-    "hairline":     "#e5e7eb",
-    "text_primary": "#0f172a",
-    "text_secondary": "#64748b",
-    "text_muted":   "#94a3b8",
-    "border":       "#e5e7eb",
-    "shadow_sm":    "0 1px 2px rgba(15,23,42,0.04)",
-    "shadow_md":    "0 4px 14px rgba(15,23,42,0.06)",
-    "shadow_lg":    "0 12px 32px rgba(15,23,42,0.08)",
-    "state_colors": _STATE_COLORS,
-    "state_text":   "#ffffff",
-    "tag_bg":       "#f1f5f9",
-    "tag_text":     "#0f172a",
-    "chat_user_bg": "#f8fafc",
-    "chat_bot_bg":  "#ffffff",
-    "blocked_bg":   "#fef2f2",
+    # Surfaces — warm paper, not cool white
+    "bg_primary":   "#f7f4ee",   # paper-0
+    "bg_secondary": "#efeae0",   # paper-2
+    "bg_card":      "#fbf9f4",   # paper-1
+    "surface_0":    "#f7f4ee",
+    "surface_1":    "#fbf9f4",
+    "surface_2":    "#efeae0",
+    "surface_3":    "#e6e0d2",
+    "hairline":     "#d9d3c4",
+    # Text — deep warm ink, not pure black
+    "text_primary":   "#1f1b16",
+    "text_secondary": "#564f44",
+    "text_muted":     "#8a8278",
+    "border":         "#d9d3c4",
+    "shadow_sm":      "0 1px 2px rgba(31,27,22,0.04)",
+    "shadow_md":      "0 6px 16px rgba(31,27,22,0.06)",
+    "shadow_lg":      "0 16px 40px rgba(31,27,22,0.08)",
+    "state_colors":   _STATE_COLORS,
+    "state_text":     "#fbf9f4",
+    "tag_bg":         "#efeae0",
+    "tag_text":       "#1f1b16",
+    "chat_user_bg":   "#efeae0",
+    "chat_bot_bg":    "#fbf9f4",
+    "blocked_bg":     "#f5e7e3",
     "blocked_border": _STATE_COLORS["Restricted"],
-    "expander_bg":  "#ffffff",
-    "accent":       _BRAND_ACCENT,
-    "wellbeing":    _WELLBEING,
+    "expander_bg":    "#fbf9f4",
+    "accent":         _BRAND_ACCENT,
+    "wellbeing":      _WELLBEING,
 }
 
 DARK_THEME: Dict = {
     "name": "dark",
-    "bg_primary":   "#0b1020",
-    "bg_secondary": "#0f172a",
-    "bg_card":      "#111827",
-    "surface_0":    "#0b1020",
-    "surface_1":    "#0f172a",
-    "surface_2":    "#111827",
-    "surface_3":    "#1e293b",
-    "hairline":     "rgba(148,163,184,0.16)",
-    "text_primary": "#e2e8f0",
-    "text_secondary": "#94a3b8",
-    "text_muted":   "#64748b",
-    "border":       "rgba(148,163,184,0.16)",
-    "shadow_sm":    "0 1px 2px rgba(0,0,0,0.30)",
-    "shadow_md":    "0 4px 14px rgba(0,0,0,0.32)",
-    "shadow_lg":    "0 12px 32px rgba(0,0,0,0.40)",
-    "state_colors": _STATE_COLORS,
-    "state_text":   "#ffffff",
-    "tag_bg":       "rgba(148,163,184,0.10)",
-    "tag_text":     "#e2e8f0",
-    "chat_user_bg": "#0f172a",
-    "chat_bot_bg":  "#111827",
-    "blocked_bg":   "rgba(239,68,68,0.10)",
+    # Ink-on-paper inversion — still warm, never cool blue
+    "bg_primary":   "#1a1814",
+    "bg_secondary": "#23201b",
+    "bg_card":      "#211e19",
+    "surface_0":    "#1a1814",
+    "surface_1":    "#211e19",
+    "surface_2":    "#2a2620",
+    "surface_3":    "#332e26",
+    "hairline":     "rgba(232,224,206,0.10)",
+    "text_primary":   "#ece6d6",
+    "text_secondary": "#b8b0a0",
+    "text_muted":     "#7e776c",
+    "border":         "rgba(232,224,206,0.10)",
+    "shadow_sm":      "0 1px 2px rgba(0,0,0,0.35)",
+    "shadow_md":      "0 6px 16px rgba(0,0,0,0.40)",
+    "shadow_lg":      "0 16px 40px rgba(0,0,0,0.50)",
+    "state_colors":   _STATE_COLORS,
+    "state_text":     "#1a1814",
+    "tag_bg":         "rgba(232,224,206,0.06)",
+    "tag_text":       "#ece6d6",
+    "chat_user_bg":   "#23201b",
+    "chat_bot_bg":    "#211e19",
+    "blocked_bg":     "rgba(155,48,48,0.16)",
     "blocked_border": _STATE_COLORS["Restricted"],
-    "expander_bg":  "#0f172a",
-    "accent":       _BRAND_ACCENT,
-    "wellbeing":    _WELLBEING,
+    "expander_bg":    "#211e19",
+    "accent":         _BRAND_ACCENT,
+    "wellbeing":      _WELLBEING,
 }
 
 
@@ -189,8 +193,8 @@ def _vars(t: Dict) -> str:
 
         /* Radius */
         --cab-radius-sm: 6px;
-        --cab-radius-md: 10px;
-        --cab-radius-lg: 14px;
+        --cab-radius-md: 12px;
+        --cab-radius-lg: 16px;
 
         /* Shadows */
         --cab-shadow-sm: {t["shadow_sm"]};
@@ -198,11 +202,12 @@ def _vars(t: Dict) -> str:
         --cab-shadow-lg: {t["shadow_lg"]};
 
         /* Type */
-        --cab-font-sans: "Inter", -apple-system, BlinkMacSystemFont,
-                         "Segoe UI", Roboto, "Helvetica Neue", Arial,
-                         sans-serif;
-        --cab-font-mono: "JetBrains Mono", "Roboto Mono", ui-monospace,
-                         SFMono-Regular, Menlo, monospace;
+        --cab-font-sans:  "Inter", -apple-system, BlinkMacSystemFont,
+                          "Segoe UI", Helvetica, Arial, sans-serif;
+        --cab-font-serif: "Source Serif 4", "Iowan Old Style", Georgia,
+                          "Times New Roman", serif;
+        --cab-font-mono:  "JetBrains Mono", "Roboto Mono", ui-monospace,
+                          SFMono-Regular, Menlo, monospace;
     """
 
 
@@ -214,7 +219,7 @@ def inject_theme_css(theme: Dict) -> None:
     /* Inter + JetBrains Mono.  Streamlit serves Source Sans Pro by default;
        we override at the body level. Falls back to system fonts gracefully
        if Google Fonts is blocked. */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
     :root {{
         {_vars(theme)}
@@ -366,9 +371,10 @@ def inject_theme_css(theme: Dict) -> None:
         border-radius: 5px;
     }}
     .cab-brand-title {{
-        font-size: 15px;
-        font-weight: 700;
-        letter-spacing: 0.02em;
+        font-family: var(--cab-font-serif);
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
         color: var(--cab-text-primary);
         line-height: 1;
     }}
@@ -386,11 +392,12 @@ def inject_theme_css(theme: Dict) -> None:
         gap: 7px;
         padding: 5px 11px;
         border-radius: 999px;
-        background: rgba(239,68,68,0.10);
-        border: 1px solid rgba(239,68,68,0.25);
+        background: rgba(155,48,48,0.10);
+        border: 1px solid rgba(155,48,48,0.25);
+        font-family: var(--cab-font-mono);
         font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.12em;
+        font-weight: 600;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--cab-state-restricted);
     }}
@@ -398,13 +405,13 @@ def inject_theme_css(theme: Dict) -> None:
         width: 7px; height: 7px;
         border-radius: 50%;
         background: var(--cab-state-restricted);
-        box-shadow: 0 0 0 0 rgba(239,68,68, 0.6);
-        animation: cab-pulse 1.6s ease-out infinite;
+        box-shadow: 0 0 0 0 rgba(155,48,48,0.60);
+        animation: cab-pulse 1.8s ease-out infinite;
     }}
     @keyframes cab-pulse {{
-        0%   {{ box-shadow: 0 0 0 0 rgba(239,68,68, 0.55); }}
-        70%  {{ box-shadow: 0 0 0 9px rgba(239,68,68, 0);   }}
-        100% {{ box-shadow: 0 0 0 0 rgba(239,68,68, 0);     }}
+        0%   {{ box-shadow: 0 0 0 0 rgba(155,48,48,0.55); }}
+        70%  {{ box-shadow: 0 0 0 9px rgba(155,48,48,0);  }}
+        100% {{ box-shadow: 0 0 0 0 rgba(155,48,48,0);    }}
     }}
     .cab-mode-chip {{
         display: inline-flex;
@@ -418,13 +425,13 @@ def inject_theme_css(theme: Dict) -> None:
         line-height: 1.15;
     }}
     .cab-mode-chip[data-mode="cab"] {{
-        background: rgba(16,185,129,0.10);
-        border: 1px solid rgba(16,185,129,0.30);
+        background: rgba(63,125,88,0.10);
+        border: 1px solid rgba(63,125,88,0.30);
         color: var(--cab-state-safe);
     }}
     .cab-mode-chip[data-mode="baseline"] {{
-        background: rgba(239,68,68,0.10);
-        border: 1px solid rgba(239,68,68,0.30);
+        background: rgba(155,48,48,0.10);
+        border: 1px solid rgba(155,48,48,0.30);
         color: var(--cab-state-restricted);
     }}
     .cab-mode-chip-sub {{
@@ -460,8 +467,8 @@ def inject_theme_css(theme: Dict) -> None:
         color: var(--cab-text-muted);
     }}
     .cab-stat-value {{
-        font-family: var(--cab-font-mono);
-        font-size: 15px;
+        font-family: var(--cab-font-serif);
+        font-size: 17px;
         font-weight: 600;
         color: var(--cab-text-primary);
         font-variant-numeric: tabular-nums;
@@ -499,9 +506,10 @@ def inject_theme_css(theme: Dict) -> None:
         color: #fff;
     }}
     .cab-ribbon-state {{
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
+        font-family: var(--cab-font-serif);
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
         color: var(--cab-text-primary);
     }}
     .cab-ribbon-score {{
@@ -525,12 +533,12 @@ def inject_theme_css(theme: Dict) -> None:
         letter-spacing: 0.02em;
     }}
     .cab-chip--injection {{
-        background: rgba(239,68,68,0.12);
+        background: rgba(155,48,48,0.12);
         color: var(--cab-state-restricted);
         font-weight: 700;
     }}
     .cab-chip--wellbeing {{
-        background: rgba(139,92,246,0.14);
+        background: rgba(91,83,145,0.14);
         color: var(--cab-wellbeing);
         font-weight: 700;
     }}
@@ -588,10 +596,10 @@ def inject_theme_css(theme: Dict) -> None:
         padding: 2px 8px;
         border-radius: 5px;
     }}
-    .cab-pipeline-status--pass {{ background: rgba(16,185,129,0.12);  color: var(--cab-state-safe); }}
-    .cab-pipeline-status--high {{ background: rgba(239,68,68,0.12);   color: var(--cab-state-restricted); }}
-    .cab-pipeline-status--med  {{ background: rgba(245,158,11,0.14);  color: var(--cab-state-suspicious); }}
-    .cab-pipeline-status--low  {{ background: rgba(16,185,129,0.12);  color: var(--cab-state-safe); }}
+    .cab-pipeline-status--pass {{ background: rgba(63,125,88,0.14);   color: var(--cab-state-safe); }}
+    .cab-pipeline-status--high {{ background: rgba(155,48,48,0.14);   color: var(--cab-state-restricted); }}
+    .cab-pipeline-status--med  {{ background: rgba(168,122,44,0.16);  color: var(--cab-state-suspicious); }}
+    .cab-pipeline-status--low  {{ background: rgba(63,125,88,0.14);   color: var(--cab-state-safe); }}
     .cab-pipeline-status--skip {{ background: var(--cab-tag-bg);      color: var(--cab-text-muted); }}
     .cab-pipeline-detail {{
         font-family: var(--cab-font-mono);
@@ -638,9 +646,10 @@ def inject_theme_css(theme: Dict) -> None:
         margin-bottom: 4px;
     }}
     .cab-event-state {{
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
+        font-family: var(--cab-font-serif);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
     }}
     .cab-event-msg {{
         font-size: 13px;
