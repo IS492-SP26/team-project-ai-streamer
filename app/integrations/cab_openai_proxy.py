@@ -239,8 +239,44 @@ app = FastAPI(
 )
 
 
+def _flatten_content(content: Any) -> str:
+    """Flatten an OpenAI chat-completion `content` field to a plain string.
+
+    The OpenAI chat-completions schema allows `content` to be either:
+      - a plain string (most clients), or
+      - a list of content parts like
+        `[{"type": "text", "text": "..."}, {"type": "image_url", ...}]`
+        (multimodal format, which OLLV's `openai_compatible_llm`
+        emits by default).
+
+    Without flattening, `str()` on the list returns the Python repr
+    (`"[{'type': 'text', 'text': '…'}]"`), which leaked into the echo
+    stream and the Streamlit transcript as visible noise around every
+    user turn. This helper extracts just the text payload(s) and
+    joins them — non-text parts (images, audio) are dropped because
+    cab_pipeline is text-only and the audit log only needs the
+    governance-relevant content.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: List[str] = []
+        for item in content:
+            if isinstance(item, dict):
+                # OpenAI multimodal: only keep text parts.
+                if item.get("type") == "text":
+                    parts.append(str(item.get("text", "")))
+            elif isinstance(item, str):
+                parts.append(item)
+        return " ".join(p for p in parts if p).strip()
+    if content is None:
+        return ""
+    return str(content)
+
+
 def _split_messages(messages: List[Dict[str, Any]]) -> tuple[Optional[str], List[Dict[str, str]]]:
-    """Return (latest_user_message, prior_history)."""
+    """Return (latest_user_message, prior_history) with content flattened
+    to plain strings (handles OpenAI's multimodal content-part format)."""
     if not messages:
         return None, []
     # Find the last user message; everything before it is prior history.
@@ -251,13 +287,13 @@ def _split_messages(messages: List[Dict[str, Any]]) -> tuple[Optional[str], List
             break
     if latest_user_idx is None:
         return None, []
-    latest = messages[latest_user_idx].get("content")
+    latest = _flatten_content(messages[latest_user_idx].get("content"))
     history = []
     for m in messages[:latest_user_idx]:
         role = m.get("role")
         if role in {"user", "assistant", "system"}:
-            history.append({"role": role, "content": str(m.get("content", ""))})
-    return (str(latest) if latest is not None else None), history
+            history.append({"role": role, "content": _flatten_content(m.get("content"))})
+    return (latest if latest else None), history
 
 
 def _build_streaming_response(
