@@ -240,31 +240,29 @@ def _render_aria_iframe_block() -> None:
     # Pipeline detail being below-the-fold is a normal pattern for
     # secondary panels. The iframe is the PRIMARY content; making it
     # always-fully-visible is more important than no-page-scroll.
-    # iframe 900 (was 760). Diagnosed via JS-inspect of OLLV's DOM:
-    # OLLV's bottom-control bar is positioned at body-bottom-10px,
-    # and OLLV's body uses `height: 100vh`. Inside an iframe Chrome
-    # resolves `100vh` to the OUTER WINDOW viewport (≈888px on a 14"
-    # MacBook) NOT the iframe height. So OLLV's body is ~880-900px
-    # tall regardless of iframe height; controls render at y≈870
-    # in OLLV-relative coords. With iframe=760px, the controls
-    # (y_relative=870) overflow the iframe's bottom by ~110px and
-    # get clipped at half — the persistent "卡成一半".
+    # iframe back to 600px. Now that OLLV's bottom-control bar is
+    # HIDDEN by the OLLV-side CSS (see scripts/ollv_index_html.patched.html
+    # for the chakra-stack:has(textarea) display:none rule), the
+    # iframe just shows the avatar + scene background. We don't need
+    # 900px of room for content that no longer renders. 600 keeps
+    # Aria visually large without dwarfing the left transcript
+    # column — restoring left/right symmetry.
     #
-    # Fix: iframe 900px. Now OLLV's body fits inside the iframe
-    # bounds; controls render at iframe-relative y=870, well within
-    # the 900px iframe height.
-    #
-    # The (separate) OLLV-side fix would be to override OLLV's body
-    # to `height: 100%` (matching iframe) instead of `100vh`, but
-    # that requires upstream OLLV changes or a more invasive
-    # monkey-patch. The 900px iframe is the simpler durable fix.
+    # Why hide the controls instead of fitting them? The C-A-B demo
+    # drives Aria via the sidebar Example messages / Red-team
+    # auto-play, which inject through the captured WebSocket. OLLV's
+    # native textarea was never on the demo critical path, and its
+    # clipping behavior across viewport sizes was intractable
+    # (different per-width Chakra flex reflow heights, `100vh`
+    # resolving to outer-window in iframes, etc.). Removing the
+    # controls solves the clipping AND the L/R symmetry in one go.
     st.markdown(
         '<iframe id="aria_iframe" '
         'src="http://localhost:12393" '
-        'width="100%" height="900" '
+        'width="100%" height="600" '
         'style="border:0;border-radius:14px;background:var(--cab-bg-card);'
         'box-shadow:0 4px 18px rgba(0,0,0,0.18);display:block;'
-        'min-height:900px;'
+        'min-height:600px;'
         'margin-bottom:24px;" '
         'allow="autoplay; microphone; camera"></iframe>'
         # Strong visual divider — was 1px hr, now a 2px line in the
@@ -1172,14 +1170,13 @@ def main() -> None:
         else:
             _section_header("💬 Local chat")
 
-        # Match the right column's combined height: verdict-pill block
-        # (~80px) + Aria header (~30px) + Aria iframe (660 + 18 margin
-        # + 1px hr + 24 hr-margin = ~723px iframe-section). Transcript
-        # container uses 730 which together with the section header
-        # (~30px) and the collapsed Pipeline-detail expander (~50px)
-        # bottoms the LEFT column at roughly the same y as the RIGHT
-        # column's Recent-events expander.
-        transcript_height = 730 if st.session_state.echo_mode else 480
+        # Match the right column: verdict-pill (~80) + Aria header
+        # (~30) + iframe 600 + 24 margin + 2px hr + 32 hr-margin
+        # = ~768px right-side stack. Transcript 670 + section header
+        # (~30) + Pipeline-detail expander (~50) ≈ 750 — close
+        # enough that both columns' Recent-events / Pipeline-detail
+        # expanders bottom out at roughly the same y.
+        transcript_height = 670 if st.session_state.echo_mode else 480
         chat_box = st.container(height=transcript_height)
         with chat_box:
             if not st.session_state.events:
