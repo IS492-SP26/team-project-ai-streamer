@@ -198,6 +198,51 @@ def inject_theme_css(theme: Dict) -> None:
         color: var(--cab-text-secondary);
         font-size: 12px;
     }}
+
+    /* ============================================================
+       Streamlit native widget overrides — fixes specific UI
+       regressions reported during demo rehearsal:
+       1) Red/orange focus ring on expanders after a click (Streamlit's
+          default :focus-visible style is a chunky reddish outline that
+          stays after the user clicks).
+       2) Pause / Step (secondary) buttons rendering nearly invisible
+          on the dark theme — default border is rgba(255,255,255,0.05)
+          which disappears.
+       ============================================================ */
+
+    /* Suppress the persistent red focus ring on expanders */
+    [data-testid="stExpander"] details summary:focus,
+    [data-testid="stExpander"] details summary:focus-visible,
+    [data-testid="stExpander"] details:focus,
+    [data-testid="stExpander"] details:focus-visible,
+    [data-testid="stExpander"]:focus-within {{
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: var(--cab-border) !important;
+    }}
+    /* Also: don't let an expander show a red border just for being open. */
+    [data-testid="stExpander"] details[open] {{
+        border-color: var(--cab-border) !important;
+    }}
+
+    /* Bump non-primary button visibility on dark theme. The Pause /
+       Step buttons in the Red-team auto-play panel were rendering
+       with such a faint border that they disappeared on the dark bg. */
+    [data-testid="stButton"] button[kind="secondary"]:not(:disabled),
+    [data-testid="stButton"] button:not([kind="primary"]):not([kind="primaryFormSubmit"]):not(:disabled) {{
+        border: 1px solid var(--cab-text-secondary) !important;
+        color: var(--cab-text-primary) !important;
+    }}
+    [data-testid="stButton"] button[kind="secondary"]:disabled,
+    [data-testid="stButton"] button:not([kind="primary"]):not([kind="primaryFormSubmit"]):disabled {{
+        border: 1px solid var(--cab-border) !important;
+        color: var(--cab-text-secondary) !important;
+        opacity: 0.55 !important;
+    }}
+    [data-testid="stButton"] button[kind="secondary"]:hover:not(:disabled) {{
+        border-color: var(--cab-text-primary) !important;
+        background: var(--cab-bg-card) !important;
+    }}
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)

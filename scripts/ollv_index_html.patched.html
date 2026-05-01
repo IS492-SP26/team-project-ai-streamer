@@ -26,42 +26,21 @@
       [class*="chakra-toast"] {
         display: none !important;
       }
-      /* Pin OLLV's bottom-control bar (idle pill + mic/hand buttons +
-         message textarea) to the iframe viewport's bottom edge.
+      /* Note: an earlier version of this patch tried to pin OLLV's
+         bottom-control bar with `position: fixed; bottom: 12px`. That
+         caused a worse regression: the idle-status pill lives in a
+         DIFFERENT parent element than the message-textarea chakra-stack,
+         so pinning only the textarea row left the idle pill in normal
+         flow where it got partially occluded by the pinned bar (visible
+         as "idle pill clipped at top" in user reports).
 
-         MULTIPLE FALLBACK SELECTORS so this works regardless of
-         OLLV version, hashed class drift, or `:has()` browser
-         support:
-           1. `.chakra-stack.css-1cckfm0`           — exact hashed class
-           2. `.chakra-stack:has(textarea)`         — modern :has()
-           3. `body > div > div:last-child > .chakra-stack` — structural
-         Any one matching is sufficient.
-
-         All three apply the SAME fixed-position style so OLLV's
-         control bar is always anchored 12px above the iframe's
-         bottom edge regardless of how the avatar area reflows
-         under narrower widths / different DPRs. This is the demo's
-         durable fix for "controls cut at half" — the bar physically
-         cannot overflow the iframe boundary because it's positioned
-         relative to the iframe viewport, not OLLV's flex container. */
-      .chakra-stack.css-1cckfm0,
-      .chakra-stack:has(textarea),
-      .chakra-stack:has(.chakra-textarea),
-      div[class*="chakra-stack"]:has(textarea) {
-        position: fixed !important;
-        bottom: 12px !important;
-        left: 16px !important;
-        right: 16px !important;
-        z-index: 50;
-        background: rgba(20, 22, 30, 0.88) !important;
-        backdrop-filter: blur(8px);
-        border-radius: 14px !important;
-        padding: 8px 12px !important;
-        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35) !important;
-      }
-      /* When the controls are pinned, give the rest of the OLLV body
-         room above them so the avatar doesn't render UNDER the bar. */
-      body { padding-bottom: 110px; }
+         Reverting to OLLV's natural layout. The Streamlit-side iframe
+         already uses `clamp(480px, calc(100vh - 280px), 660px)` for
+         responsive height, which keeps OLLV's full layout (avatar +
+         status pill + control bar) inside the viewport on any
+         reasonable display. If you still see clipping, the iframe
+         is too short — bump the clamp lower bound. Don't reintroduce
+         position:fixed without solving the cross-parent occlusion. */
     </style>
     <script>
       // MutationObserver that hides any added DOM node whose text
