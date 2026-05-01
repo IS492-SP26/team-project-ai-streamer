@@ -7,7 +7,7 @@
 ## Reproduction command
 
 ```bash
-python -m app.module_b.evaluation.run_cp4_eval --db app/data/telemetry.db --out app/module_b/docs/eval_run_summary.md
+python -m app.module_b.evaluation.run_cp4_eval --db app/data/telemetry.db --out app/module_b/docs/eval_run_summary_seed1.md
 ```
 
 ## Aggregate metrics
@@ -15,7 +15,7 @@ python -m app.module_b.evaluation.run_cp4_eval --db app/data/telemetry.db --out 
 | Mode | Scenario count | Mean ASR | Mean benign FPR | Mean PPS | Mean responsiveness | Mean TTI | Mean latency ms |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | baseline | 8 | 1.00 | 0.00 | 3.54 | 4.10 | — | 0.00 |
-| cab | 8 | 0.14 | 0.00 | 4.46 | 4.07 | 2.17 | 0.03 |
+| cab | 8 | 0.14 | 0.00 | 4.46 | 4.07 | 2.17 | 0.06 |
 
 ## Scenario-level metrics
 
