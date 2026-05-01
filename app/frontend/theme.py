@@ -705,40 +705,53 @@ def inject_theme_css(theme: Dict) -> None:
         font-style: italic;
     }}
 
-    /* Pipeline trace card — components.py emits .cab-pipeline → rows of
-       .cab-pipeline-row with .cab-pipeline-icon · -name · -status · -detail.
-       Reuse the look of .cab-pipeline-card / .cab-prow. */
+    /* Pipeline trace card — horizontal 5-stage layout. Each layer is a
+       column showing icon · name · status pill · (optional) detail
+       stacked vertically. Keeps overall height bounded (~120px) so the
+       left column doesn't grow taller than the iframe when a turn fires
+       multiple layers. */
     .cab-pipeline {{
-        background: var(--cab-surface-1);
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0;
+        background: var(--cab-hairline);
         border: 1px solid var(--cab-hairline);
         border-radius: var(--cab-radius-xl);
         box-shadow: var(--cab-shadow-sm);
         overflow: hidden;
     }}
     .cab-pipeline-row {{
-        display: grid;
-        grid-template-columns: 28px 180px 80px 1fr;
-        align-items: center; gap: 12px;
-        padding: 12px 22px;
-        border-bottom: 1px solid var(--cab-hairline);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 14px 10px;
+        background: var(--cab-surface-1);
+        text-align: center;
+        min-width: 0;
     }}
-    .cab-pipeline-row:last-child {{ border-bottom: 0; }}
+    .cab-pipeline-row + .cab-pipeline-row {{
+        box-shadow: -1px 0 0 var(--cab-hairline);
+    }}
     .cab-pipeline-icon {{
-        width: 22px; height: 22px;
-        display: grid; place-items: center;
-        font-size: 14px;
+        font-size: 18px;
+        line-height: 1;
         color: var(--cab-text-secondary);
     }}
     .cab-pipeline-name {{
-        font-size: 13.5px; font-weight: 500;
+        font-size: 12px;
+        font-weight: 500;
         color: var(--cab-text-primary);
+        line-height: 1.2;
+        letter-spacing: 0.01em;
     }}
     .cab-pipeline-status {{
-        justify-self: start;
         font-family: var(--cab-font-mono);
-        font-size: 10.5px; font-weight: 700;
-        letter-spacing: 0.10em; text-transform: uppercase;
-        padding: 3px 9px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        padding: 2px 8px;
         border-radius: var(--cab-radius-sm);
         background: var(--cab-surface-2);
         color: var(--cab-text-secondary);
@@ -771,11 +784,12 @@ def inject_theme_css(theme: Dict) -> None:
     }}
     .cab-pipeline-detail {{
         font-family: var(--cab-font-mono);
-        font-size: 11.5px;
-        color: var(--cab-text-secondary);
-        text-align: right; justify-self: end;
+        font-size: 10.5px;
+        color: var(--cab-text-muted);
+        line-height: 1.35;
         max-width: 100%;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }}
     </style>
     """

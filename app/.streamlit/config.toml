@@ -1,8 +1,8 @@
 [server]
 headless = true
 
-[client]
-toolbarMode = "minimal"
-
-[theme]
-base = "light"
+# Note: do NOT pin [theme] base here. When base is explicitly set,
+# Streamlit hides the System / Light / Dark toggle from the kebab menu.
+# Our `_is_dark_mode()` defaults to LIGHT when theme.base is unset, so
+# leaving this open lets users flip Streamlit's native chrome from the
+# menu while our paper palette stays the canonical look.

@@ -190,13 +190,19 @@ def _render_aria_iframe_block() -> None:
     React keeps the same DOM node and OLLV's /client-ws session
     survives autorefresh ticks.
     """
+    # Iframe height tuned so right column matches left column total
+    # height. Left = 30 (Transcript eyebrow) + 460 (transcript) +
+    # 30 (Verdict eyebrow) + 80 (verdict ribbon) + 30 (Pipeline eyebrow) +
+    # 80–250 (pipeline panel) ≈ 710–880. Setting iframe at 720 lands the
+    # whole console within a single Mac viewport (1440×900) without
+    # cutting the OLLV chat input.
     st.markdown(
         '<iframe id="aria_iframe" '
         'src="http://localhost:12393" '
-        'width="100%" height="820" '
+        'width="100%" height="720" '
         'style="border:0;border-radius:14px;background:var(--cab-surface-2);'
         'box-shadow:var(--cab-shadow-md);display:block;'
-        'min-height:820px;'
+        'min-height:720px;'
         'margin-bottom:16px;" '
         'allow="autoplay; microphone; camera"></iframe>',
         unsafe_allow_html=True,
@@ -994,22 +1000,21 @@ def main() -> None:
     col_left, col_right = st.columns([62, 38], gap="large")
 
     # ---------- AUDIT LANE (left) ----------
+    # All evidence (transcript → verdict → pipeline trace) is now stacked
+    # on the left so the audit lane reads top-down as a single column.
+    # Right column hosts the Aria stage alone — left and right heights
+    # are tuned so the whole console fits a single Mac window without
+    # vertical scroll.
     with col_left:
         _eyebrow("Transcript")
-
-        # Transcript scroll box. Height tuned so the bottom of the box
-        # sits near the bottom of the right column's iframe (820 +
-        # ~64 ribbon + ~28 eyebrow ≈ 912 minus the status bar). We
-        # also leave room for the pipeline-detail card BELOW the
-        # transcript on the same column, hence 660 (down from 730).
-        transcript_height = 660 if st.session_state.echo_mode else 460
+        transcript_height = 460 if st.session_state.echo_mode else 320
         _render_transcript(st.session_state.events, height=transcript_height)
 
         # Local-mode side-by-side comparison (when enabled)
         if not st.session_state.echo_mode and st.session_state.events:
             _render_local_comparison(st.session_state.events[-1])
 
-        # Local-mode chat input
+        # Local-mode chat input (Streamlit docks it to the bottom anyway).
         if not st.session_state.echo_mode:
             user_input = st.chat_input("Type a message — runs local C-A-B")
             if not user_input and st.session_state.get("_pending_example"):
@@ -1024,10 +1029,13 @@ def main() -> None:
                 "Flip Pipeline mode (sidebar) and ▶ Play to compare."
             )
 
-        # PIPELINE TRACE — always visible card below transcript when
-        # there is a latest event. Replaces the previous default-closed
-        # expander; the audience needs this evidence at-a-glance during
-        # the demo, not behind a click.
+        _eyebrow("Verdict")
+        latest_ev = st.session_state.events[-1] if st.session_state.events else None
+        render_verdict_ribbon(latest_ev)
+
+        # PIPELINE TRACE — always visible card below the verdict when
+        # there is a latest event. The audience needs this evidence
+        # at-a-glance during the demo, not behind a click.
         _eyebrow("Pipeline trace · last turn")
         if st.session_state.events:
             ld = st.session_state.events[-1].get("layer_details") or {}
@@ -1040,13 +1048,6 @@ def main() -> None:
 
     # ---------- STAGE (right) ----------
     with col_right:
-        # Mirror the left column's hierarchy: eyebrow → primary card →
-        # eyebrow → secondary card. Without an eyebrow above the verdict
-        # ribbon, the two columns started at different Y offsets.
-        _eyebrow("Verdict")
-        latest_ev = st.session_state.events[-1] if st.session_state.events else None
-        render_verdict_ribbon(latest_ev)
-
         if st.session_state.show_avatar:
             _eyebrow("Aria · audience stage")
             _render_aria_iframe_block()
