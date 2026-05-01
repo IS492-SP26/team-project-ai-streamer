@@ -995,7 +995,7 @@ def main() -> None:
 
     # ---------- AUDIT LANE (left) ----------
     with col_left:
-        _eyebrow("Echo transcript" if st.session_state.echo_mode else "Local chat")
+        _eyebrow("Transcript")
 
         # Transcript scroll box. Height tuned so the bottom of the box
         # sits near the bottom of the right column's iframe (820 +
@@ -1040,9 +1040,10 @@ def main() -> None:
 
     # ---------- STAGE (right) ----------
     with col_right:
-        # Verdict ribbon — first thing on the right so it stays above
-        # the iframe fold even on a 13" laptop. Replaces the previous
-        # `_section_header + _render_compact_status` two-card stack.
+        # Mirror the left column's hierarchy: eyebrow → primary card →
+        # eyebrow → secondary card. Without an eyebrow above the verdict
+        # ribbon, the two columns started at different Y offsets.
+        _eyebrow("Verdict")
         latest_ev = st.session_state.events[-1] if st.session_state.events else None
         render_verdict_ribbon(latest_ev)
 
