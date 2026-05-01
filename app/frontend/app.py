@@ -861,6 +861,13 @@ def _advance_red_team_one() -> None:
         st.session_state.rt_playing = False
         st.session_state.rt_scenario_done = True
         st.session_state.rt_iterator = None
+        # Transient toast instead of an inline banner so the left column
+        # height stays in sync with the iframe.
+        st.toast(
+            f"Scenario complete · {st.session_state.turn} turns. "
+            "Flip Pipeline mode and ▶ Play to compare.",
+            icon="✅",
+        )
         return
     if st.session_state.echo_mode:
         if st.session_state.show_avatar:
@@ -1022,12 +1029,6 @@ def main() -> None:
             if user_input:
                 _process_turn(user_input)
                 st.rerun()
-
-        if st.session_state.rt_scenario_done:
-            st.success(
-                f"Scenario complete — {st.session_state.turn} turns. "
-                "Flip Pipeline mode (sidebar) and ▶ Play to compare."
-            )
 
         _eyebrow("Verdict")
         latest_ev = st.session_state.events[-1] if st.session_state.events else None
