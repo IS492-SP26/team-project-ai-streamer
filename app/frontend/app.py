@@ -421,7 +421,7 @@ _EXAMPLES = [
 
 def _render_sidebar() -> None:
     with st.sidebar:
-        # ---- Always-visible primary controls ----
+        # ---- Primary controls (compact: Mode + Echo on one logical block) ----
         st.markdown("### 🎚️ Mode")
         new_mode = st.radio(
             "Pipeline mode",
@@ -435,38 +435,32 @@ def _render_sidebar() -> None:
             st.session_state.pipeline_mode = new_mode
             _reset_session()
 
-        toggles = st.columns(2)
-        with toggles[0]:
-            new_echo = st.toggle(
-                "🪞 Echo Aria",
-                value=st.session_state.echo_mode,
-                help="When ON, Streamlit becomes a read-only mirror of "
-                     "Aria's chat (proxy traffic). 1 LLM call per turn, "
-                     "Streamlit + iframe show the same conversation. When "
-                     "OFF, Streamlit runs its own pipeline (2 LLM calls).",
-            )
-            if new_echo != st.session_state.echo_mode:
-                st.session_state.echo_mode = new_echo
-                if new_echo:
-                    # Snap baseline offset to NOW so we don't replay history.
-                    st.session_state._echo_init_offset = _echo_stream_size()
-                    _reset_session()
-        with toggles[1]:
-            st.session_state.comparison_mode = st.toggle(
-                "⚔️ Compare",
-                value=st.session_state.comparison_mode,
-                help="Show baseline vs C-A-B side-by-side after each turn. "
-                     "Local-only mode (echo OFF).",
-                disabled=st.session_state.echo_mode,
-            )
-
-        st.session_state.llm_enabled = st.toggle(
-            "🤖 Live LLM (offline echo only)",
-            value=st.session_state.llm_enabled,
-            help="Affects local-mode (echo OFF) only. Echo mode always uses "
-                 "whatever the proxy is configured for.",
-            disabled=st.session_state.echo_mode,
+        new_echo = st.toggle(
+            "🪞 Echo Aria",
+            value=st.session_state.echo_mode,
+            help="When ON, Streamlit mirrors the proxy traffic Aria's iframe "
+                 "drives (single LLM call per turn). When OFF, Streamlit "
+                 "runs its own local pipeline.",
         )
+        if new_echo != st.session_state.echo_mode:
+            st.session_state.echo_mode = new_echo
+            if new_echo:
+                st.session_state._echo_init_offset = _echo_stream_size()
+                _reset_session()
+
+        # Local-mode-only toggles — only render when echo is OFF, so the
+        # sidebar doesn't show greyed-out controls in the default flow.
+        if not st.session_state.echo_mode:
+            st.session_state.comparison_mode = st.toggle(
+                "⚔️ Compare baseline vs C-A-B",
+                value=st.session_state.comparison_mode,
+                help="Side-by-side after each local-mode turn.",
+            )
+            st.session_state.llm_enabled = st.toggle(
+                "🤖 Live LLM",
+                value=st.session_state.llm_enabled,
+                help="Use GitHub Models in local mode (requires GITHUB_TOKEN).",
+            )
 
         st.divider()
 
@@ -878,6 +872,36 @@ def _render_mode_banner() -> None:
     )
 
 
+def _render_compact_stats_strip(stats: Dict[str, Any]) -> None:
+    """Single-line stats pill — replaces the 6 huge st.metric blocks.
+
+    Renders as `Messages 0 · Blocked 0 · Passed 0 · Block 0% · Latency 0ms · Threats 0`
+    with a thin background and small font. Theme-aware via CSS vars.
+    """
+    items = [
+        ("Messages", str(stats.get("total", 0))),
+        ("Blocked", str(stats.get("blocked", 0))),
+        ("Passed", str(stats.get("passed", 0))),
+        ("Block rate", f"{stats.get('block_rate', 0.0):.0f}%"),
+        ("Latency", f"{stats.get('avg_latency_ms', 0.0):.0f}ms"),
+        ("Threats", str(stats.get("harmful_caught", 0))),
+    ]
+    pills = "".join(
+        f'<span style="display:inline-flex;align-items:center;gap:4px;'
+        f"padding:4px 10px;background:var(--cab-bg-card);"
+        f'border-radius:6px;font-size:0.85rem;">'
+        f'<span style="color:var(--cab-text-secondary);font-weight:500;">{label}</span>'
+        f'<span style="color:var(--cab-text-primary);font-weight:700;">{value}</span>'
+        f"</span>"
+        for label, value in items
+    )
+    st.markdown(
+        f'<div style="display:flex;flex-wrap:wrap;gap:8px;'
+        f'margin:4px 0 12px 0;align-items:center;">{pills}</div>',
+        unsafe_allow_html=True,
+    )
+
+
 def _render_compact_status(latest: Dict[str, Any]) -> None:
     """Inline status pill: state · action · score · tags. Theme-aware."""
     state = latest.get("risk_state", "Safe")
@@ -929,6 +953,49 @@ def _render_compact_status(latest: Dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _render_header_strip() -> None:
+    """Single compact header row: 🔴 LIVE pill + title + mode badge.
+
+    Replaces the previous 2-column header + separate mode banner. One
+    row, one strip, no wasted vertical space.
+    """
+    mode = st.session_state.pipeline_mode
+    if mode == "cab":
+        mode_bg = "var(--cab-state-safe)"
+        mode_label = "🛡️ C-A-B PIPELINE"
+        mode_sub = "Module C · wellbeing · Module A · output scanner"
+    else:
+        mode_bg = "var(--cab-state-restricted)"
+        mode_label = "⚠️ BASELINE"
+        mode_sub = "raw model · no governance"
+
+    st.markdown(
+        '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;'
+        'margin:0 0 10px 0;">'
+        # LIVE pill
+        '<div style="background:var(--cab-state-restricted);color:#fff;'
+        "padding:6px 12px;border-radius:7px;font-weight:800;"
+        'font-size:0.85rem;letter-spacing:0.4px;">🔴 LIVE</div>'
+        # Title
+        '<div style="flex:1;min-width:200px;">'
+        '<div style="font-size:1.4rem;font-weight:800;line-height:1.1;">'
+        "🛡️ C-A-B Governance Console</div>"
+        '<div style="opacity:0.65;font-size:0.78rem;margin-top:1px;">'
+        "Backstage operator view · transcript (left) mirrors Aria's audience chat (right)"
+        "</div></div>"
+        # Mode badge
+        f'<div style="background:{mode_bg};color:#fff;padding:6px 12px;'
+        f"border-radius:7px;font-weight:700;font-size:0.85rem;"
+        f'min-width:140px;text-align:center;">'
+        f'<div style="letter-spacing:0.3px;">{mode_label}</div>'
+        f'<div style="opacity:0.85;font-size:0.7rem;font-weight:500;'
+        f'margin-top:1px;">{mode_sub}</div>'
+        "</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def main() -> None:
     st.set_page_config(
         page_title="C-A-B Governance Console",
@@ -939,34 +1006,8 @@ def main() -> None:
     theme = _init_session_state()
     _render_sidebar()
 
-    # ============================== header ==============================
-    h1, h2 = st.columns([1, 6])
-    with h1:
-        st.markdown(
-            '<div style="background:var(--cab-state-restricted);color:#ffffff;'
-            "padding:8px 14px;border-radius:8px;font-weight:800;"
-            'font-size:1rem;text-align:center;">🔴 LIVE</div>',
-            unsafe_allow_html=True,
-        )
-    with h2:
-        subtitle = (
-            "Backstage operator console · Aria handles audience chat in the "
-            "iframe (right). The transcript on the left mirrors every turn "
-            "the proxy saw and the governance verdict it applied."
-            if st.session_state.echo_mode
-            else "Local pipeline mode · Streamlit runs C-A-B against its own "
-                 "input. Type below to drive the dashboard; toggle Echo Aria "
-                 "(sidebar) to mirror the live OLLV proxy instead."
-        )
-        st.markdown(
-            '<h1 style="margin:0;padding:0;font-size:1.7rem;line-height:1.15;">'
-            "🛡️ C-A-B Governance Console"
-            "</h1>"
-            f'<div style="opacity:0.7;font-size:0.85rem;margin-top:2px;">{subtitle}</div>',
-            unsafe_allow_html=True,
-        )
-
-    _render_mode_banner()
+    # ============================== header strip ==============================
+    _render_header_strip()
 
     # In echo mode, poll the proxy's echo-stream JSONL on every rerender
     # and rebuild events from it (this Streamlit session's slice only).
@@ -977,43 +1018,35 @@ def main() -> None:
         if st_autorefresh is not None:
             st_autorefresh(interval=2000, key="echo_autorefresh")
 
-    # ============================== stats dashboard ==============================
-    render_stats_dashboard(st.session_state.stats, theme)
-    st.markdown("---")
+    # ============================== compact stats pill =====================
+    _render_compact_stats_strip(st.session_state.stats)
 
     # ============================== 2-column main ==============================
-    col_left, col_right = st.columns([55, 45])
+    col_left, col_right = st.columns([55, 45], gap="medium")
 
     # ---------- left column: echo transcript (or local-mode chat) ----------
     with col_left:
         if st.session_state.echo_mode:
-            _section_header("📜 Echo transcript · operator view")
-            st.caption(
-                "Read-only mirror of the proxy's traffic. Audience-facing "
-                "chat happens in Aria's iframe (right). Each turn shows the "
-                "exact user message, governance verdict, and Aria's reply."
-            )
+            _section_header("📜 Echo transcript")
         else:
-            _section_header("💬 Local chat · pipeline test bench")
-            st.caption(
-                "Echo OFF — Streamlit runs its own C-A-B turn for each "
-                "message. Useful for unit-testing the pipeline without "
-                "the OLLV stack."
-            )
+            _section_header("💬 Local chat")
 
-        transcript_height = 520 if st.session_state.echo_mode else 460
+        transcript_height = 540 if st.session_state.echo_mode else 480
         chat_box = st.container(height=transcript_height)
         with chat_box:
             if not st.session_state.events:
-                if st.session_state.echo_mode:
-                    st.info(
-                        "Waiting for traffic… type to Aria in the iframe "
-                        "on the right, or press a button in the sidebar's "
-                        "_💬 Example messages_ / _🎯 Red-team auto-play_ "
-                        "expanders."
-                    )
-                else:
-                    st.info("No turns yet — type below or pick an example.")
+                # Lightweight empty-state — no big info box.
+                hint = (
+                    "Waiting for traffic — type to Aria (right) or use the sidebar buttons."
+                    if st.session_state.echo_mode
+                    else "No turns yet — type below or pick an example."
+                )
+                st.markdown(
+                    f'<div style="opacity:0.5;font-size:0.85rem;'
+                    f'padding:24px 14px;text-align:center;font-style:italic;">'
+                    f"{hint}</div>",
+                    unsafe_allow_html=True,
+                )
 
             for ev in st.session_state.events:
                 emoji = STATE_EMOJI.get(ev["risk_state"], "⚪")
@@ -1095,33 +1128,39 @@ def main() -> None:
                 "Flip Pipeline mode (sidebar) and ▶ Play to compare."
             )
 
-    # ---------- right column: Aria iframe + telemetry ----------
+    # ---------- right column: risk pill → Aria iframe → expanders ----------
     with col_right:
-        if st.session_state.show_avatar:
-            _section_header("🐱 Aria · audience-facing chat")
-            st.caption(
-                "💬 Type to Aria below — this iframe IS the live chat. "
-                "Buttons in the sidebar drive Aria too (you'll see her "
-                "react). The transcript on the left mirrors everything."
+        # Risk status pill goes FIRST so it stays visible above the fold —
+        # the iframe is 540px tall and would otherwise push this off-screen.
+        _section_header("📊 Latest verdict")
+        if st.session_state.events:
+            _render_compact_status(st.session_state.events[-1])
+        else:
+            st.markdown(
+                '<div style="opacity:0.5;font-size:0.85rem;padding:8px 12px;'
+                'background:var(--cab-bg-card);border-radius:7px;'
+                'font-style:italic;margin-bottom:8px;">No verdict yet — '
+                "send Aria a message or fire a sidebar button."
+                "</div>",
+                unsafe_allow_html=True,
             )
+
+        if st.session_state.show_avatar:
+            _section_header("🐱 Aria · audience chat")
             _render_aria_iframe_block()
             # Drain pending injects from example/red-team buttons. The
             # Aria iframe above is persistent (st.markdown), so this
             # transient component just postMessages and exits.
             _emit_inject_drain()
         else:
-            _section_header("🛡️ Dashboard-only mode")
-            st.info(
-                "Avatar hidden — buttons fall back to a one-shot bridge. "
-                "Re-enable in **🎨 Display** (sidebar) to see Aria react."
+            _section_header("🛡️ Dashboard-only")
+            st.markdown(
+                '<div style="opacity:0.6;font-size:0.85rem;padding:12px;">'
+                "Avatar hidden. Buttons fall back to a one-shot bridge. "
+                "Re-enable in <b>🎨 Display</b> (sidebar)."
+                "</div>",
+                unsafe_allow_html=True,
             )
-
-        st.markdown(" ")  # spacer
-        _section_header("📊 Risk status · latest turn")
-        if st.session_state.events:
-            _render_compact_status(st.session_state.events[-1])
-        else:
-            st.info("Send a message or press ▶ Play to start monitoring.")
 
         with st.expander("🔬 Pipeline detail (last turn)", expanded=False):
             if st.session_state.events:
