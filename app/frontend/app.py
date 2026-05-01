@@ -240,13 +240,31 @@ def _render_aria_iframe_block() -> None:
     # Pipeline detail being below-the-fold is a normal pattern for
     # secondary panels. The iframe is the PRIMARY content; making it
     # always-fully-visible is more important than no-page-scroll.
+    # iframe 900 (was 760). Diagnosed via JS-inspect of OLLV's DOM:
+    # OLLV's bottom-control bar is positioned at body-bottom-10px,
+    # and OLLV's body uses `height: 100vh`. Inside an iframe Chrome
+    # resolves `100vh` to the OUTER WINDOW viewport (≈888px on a 14"
+    # MacBook) NOT the iframe height. So OLLV's body is ~880-900px
+    # tall regardless of iframe height; controls render at y≈870
+    # in OLLV-relative coords. With iframe=760px, the controls
+    # (y_relative=870) overflow the iframe's bottom by ~110px and
+    # get clipped at half — the persistent "卡成一半".
+    #
+    # Fix: iframe 900px. Now OLLV's body fits inside the iframe
+    # bounds; controls render at iframe-relative y=870, well within
+    # the 900px iframe height.
+    #
+    # The (separate) OLLV-side fix would be to override OLLV's body
+    # to `height: 100%` (matching iframe) instead of `100vh`, but
+    # that requires upstream OLLV changes or a more invasive
+    # monkey-patch. The 900px iframe is the simpler durable fix.
     st.markdown(
         '<iframe id="aria_iframe" '
         'src="http://localhost:12393" '
-        'width="100%" height="760" '
+        'width="100%" height="900" '
         'style="border:0;border-radius:14px;background:var(--cab-bg-card);'
         'box-shadow:0 4px 18px rgba(0,0,0,0.18);display:block;'
-        'min-height:760px;'
+        'min-height:900px;'
         'margin-bottom:24px;" '
         'allow="autoplay; microphone; camera"></iframe>'
         # Strong visual divider — was 1px hr, now a 2px line in the

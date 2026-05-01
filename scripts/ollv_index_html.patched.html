@@ -26,6 +26,20 @@
       [class*="chakra-toast"] {
         display: none !important;
       }
+      /* CRITICAL: OLLV's stylesheet uses `height: 100vh` on html/body.
+         When OLLV is loaded INSIDE an iframe, Chrome resolves `100vh`
+         to the OUTER window viewport (the parent page's viewport),
+         not the iframe's own height. So OLLV's body becomes ~880px
+         tall on a 14" MacBook regardless of how tall the iframe is.
+         OLLV's bottom-control bar is positioned at body-bottom-10px,
+         which then overflows iframe bottoms < ~880px — visible to
+         the user as the bottom-control buttons "stuck at half".
+         Override: pin html/body to `height: 100%` so they track the
+         iframe's actual height instead of the outer-window viewport. */
+      html, body, #root {
+        height: 100% !important;
+        max-height: 100% !important;
+      }
       /* Note: an earlier version of this patch tried to pin OLLV's
          bottom-control bar with `position: fixed; bottom: 12px`. That
          caused a worse regression: the idle-status pill lives in a
