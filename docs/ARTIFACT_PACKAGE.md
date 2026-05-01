@@ -24,8 +24,19 @@ streamlit run frontend/app.py
 ```bash
 ./scripts/presentation_demo.sh
 ```
+See `CP4_RUN_COMMANDS.md` , `SETUP.md` and `cp4_live_demo_runbook.md` for more setup instructions.
 
-See `INSTALL.md` and `CP4_RUN_COMMANDS.md` for full setup instructions.
+> **Note:** The full live demo stack (`scripts/presentation_demo.sh`) requires bash 
+> (macOS/Linux) and a separate 
+> [Open-LLM-VTuber](https://github.com/t41372/Open-LLM-VTuber) installation. 
+> It starts three processes in sequence: `cab_openai_proxy.py` (port 8000) as the 
+> OpenAI-compatible governance backend, Open-LLM-VTuber Live2D avatar (port 12393) 
+> pointed at the proxy via `OPENAI_BASE_URL=http://localhost:8000/v1`, and Streamlit 
+> (port 8501) in echo mode mirroring the avatar's conversation. On Windows, use the 
+> Streamlit-only demo (`py -m streamlit run app/main.py`) as an equivalent alternative 
+> — it runs the same C-A-B pipeline with a real LLM and provides the same operator 
+> dashboard, without the Live2D avatar layer. Track A automated evaluation is fully 
+> reproducible on all platforms without any additional dependencies or API keys.
 
 ---
 
