@@ -1,8 +1,5 @@
 # C-A-B Artifact Package
 
-**Project:** C-A-B: An Integrated Governance Pipeline for AI Livestream Agents  
----
-
 ## 1. Deployed Link & Reproducible Code
 
 ### Running the System
@@ -129,30 +126,35 @@ Task definitions: `docs/user_study/personas/_tasks.json`
 ### Full reproduction sequence
 
 ```bash
-# Step 1 — Install
-cd app && pip install -r requirements.txt
+# Step 1 — Run tests
+python -m pytest
 
-# Step 2 — Run automated red-team evaluation (no API key needed)
+# Step 2 — Smoke test
+python app/smoke_test_cp4.py
+
+# Step 3 — Run a single scenario (example: indirect injection, CAB mode)
+python -m app.module_b.evaluation.scenario_runner \
+  --scenario app/eval/scenarios/indirect_injection.json \
+  --mode cab \
+  --db app/data/telemetry.db \
+  --out-json app/module_b/docs/indirect_injection_cab_trace.json
+
+# Step 4 — Run full automated evaluation
 python -m app.module_b.evaluation.run_cp4_eval \
   --db app/data/telemetry.db \
   --out app/module_b/docs/eval_run_summary.md
-# Output: eval_results.csv, eval_run_summary.md, eval_run_summary.json
 
-# Step 3 — Run user study analysis
+# Step 5 — Run user study analysis
 python docs/user_study/analyze_user_study.py \
   --input docs/user_study/raw_user_study_results.csv \
   --out docs/user_study/user_study_summary.md
-# Output: user_study_summary.md, user_study_summary.json
 
-# Step 4 — Run test suite
-cd ..
-pytest -q
-# Expected: all tests pass; harmful_escalation_regression marked xfail
-
-# Step 5 — Launch Streamlit demo
-cd app
-streamlit run frontend/app.py
+# Step 6 — Launch Streamlit demo
+streamlit run app/main.py
+# If this fails, fall back to docs/user_study/TASK_SHEET.md
 ```
+app/smoke_test.py                          | Quick smoke test for pipeline integrity
+app/module_b/evaluation/scenario_runner.py | Single-scenario runner with JSON trace output
 
 ### Key scripts reference
 
